@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -14,6 +14,7 @@ from ddt import ddt, unpack, data
 
 import octoprint.plugin
 import octoprint.settings
+import collections
 
 @ddt
 class SettingsTestCase(unittest.TestCase):
@@ -66,7 +67,7 @@ class SettingsTestCase(unittest.TestCase):
 	@unpack
 	def test_forwarded_getter(self, getter, getter_args, getter_kwargs, forwarded):
 		method_under_test = getattr(self.plugin_settings, getter)
-		self.assertTrue(callable(method_under_test))
+		self.assertTrue(isinstance(method_under_test, collections.Callable))
 
 		method_under_test(*getter_args, **getter_kwargs)
 
@@ -88,7 +89,7 @@ class SettingsTestCase(unittest.TestCase):
 	@unpack
 	def test_global_getter(self, getter, getter_args, getter_kwargs, forwarded):
 		method_under_test = getattr(self.plugin_settings, getter)
-		self.assertTrue(callable(method_under_test))
+		self.assertTrue(isinstance(method_under_test, collections.Callable))
 
 		method_under_test(*getter_args, **getter_kwargs)
 
@@ -107,7 +108,7 @@ class SettingsTestCase(unittest.TestCase):
 			called_method.__name__ = forwarded
 
 			method = getattr(self.plugin_settings, deprecated)
-			self.assertTrue(callable(method))
+			self.assertTrue(isinstance(method, collections.Callable))
 			method(["some_raw_key"])
 
 			called_method.assert_called_once_with(["plugins", self.plugin_key, "some_raw_key"], defaults=dict(plugins=dict(test_plugin=self.defaults)), preprocessors=dict(plugins=dict(test_plugin=self.get_preprocessors)))
@@ -129,7 +130,7 @@ class SettingsTestCase(unittest.TestCase):
 			called_method.__name__ = forwarded
 
 			method = getattr(self.plugin_settings, deprecated)
-			self.assertTrue(callable(method))
+			self.assertTrue(isinstance(method, collections.Callable))
 			method(["some_raw_key"])
 
 			called_method.assert_called_once_with(["some_raw_key",])
@@ -151,7 +152,7 @@ class SettingsTestCase(unittest.TestCase):
 	@unpack
 	def test_forwarded_setter(self, setter, setter_args, setter_kwargs, forwarded):
 		method_under_test = getattr(self.plugin_settings, setter)
-		self.assertTrue(callable(method_under_test))
+		self.assertTrue(isinstance(method_under_test, collections.Callable))
 
 		method_under_test(*setter_args, **setter_kwargs)
 
@@ -174,7 +175,7 @@ class SettingsTestCase(unittest.TestCase):
 	@unpack
 	def test_global_setter(self, setter, setter_args, setter_kwargs, forwarded):
 		method_under_test = getattr(self.plugin_settings, setter)
-		self.assertTrue(callable(method_under_test))
+		self.assertTrue(isinstance(method_under_test, collections.Callable))
 
 		method_under_test(*setter_args, **setter_kwargs)
 
@@ -193,7 +194,7 @@ class SettingsTestCase(unittest.TestCase):
 			called_method.__name__ = forwarded
 
 			method = getattr(self.plugin_settings, deprecated)
-			self.assertTrue(callable(method))
+			self.assertTrue(isinstance(method, collections.Callable))
 			method(["some_raw_key"], value)
 
 			called_method.assert_called_once_with(["plugins", self.plugin_key, "some_raw_key"], value, defaults=dict(plugins=dict(test_plugin=self.defaults)), preprocessors=dict(plugins=dict(test_plugin=self.set_preprocessors)))
@@ -215,7 +216,7 @@ class SettingsTestCase(unittest.TestCase):
 			called_method.__name__ = forwarded
 
 			method = getattr(self.plugin_settings, deprecated)
-			self.assertTrue(callable(method))
+			self.assertTrue(isinstance(method, collections.Callable))
 			method(["some_raw_key"], value)
 
 			called_method.assert_called_once_with(["some_raw_key"], value)

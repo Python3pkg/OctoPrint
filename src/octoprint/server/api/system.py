@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 __copyright__ = "Copyright (C) 2015 The OctoPrint Project - Released under terms of the AGPLv3 License"
@@ -77,7 +77,7 @@ def executeSystemCommand(source, command):
 	logger.info("Performing command for {}:{}: {}".format(source, command, command_spec["command"]))
 
 	try:
-		if "before" in command_spec and callable(command_spec["before"]):
+		if "before" in command_spec and isinstance(command_spec["before"], collections.Callable):
 			command_spec["before"]()
 	except Exception as e:
 		if not do_ignore:
@@ -114,10 +114,10 @@ def executeSystemCommand(source, command):
 
 def _to_client_specs(specs):
 	result = list()
-	for spec in specs.values():
+	for spec in list(specs.values()):
 		if not "action" in spec or not "source" in spec:
 			continue
-		copied = dict((k, v) for k, v in spec.items() if k in ("source", "action", "name", "confirm"))
+		copied = dict((k, v) for k, v in list(spec.items()) if k in ("source", "action", "name", "confirm"))
 		copied["resource"] = url_for(".executeSystemCommand",
 		                             source=spec["source"],
 		                             command=spec["action"],
@@ -161,7 +161,7 @@ def _get_core_command_specs():
 	)
 
 	available_commands = collections.OrderedDict()
-	for action, spec in commands.items():
+	for action, spec in list(commands.items()):
 		if not spec["command"]:
 			continue
 		spec.update(dict(action=action, source="core", async=True, ignore=True))

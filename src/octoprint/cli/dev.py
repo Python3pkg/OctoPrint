@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -110,11 +110,11 @@ class OctoPrintDevelCommands(click.MultiCommand):
 
 				env = StrictEnvironment()
 
-				for key, raw in context['cookiecutter'].items():
+				for key, raw in list(context['cookiecutter'].items()):
 					if key in options:
 						val = options[key]
 					else:
-						raw = raw if isinstance(raw, basestring) else str(raw)
+						raw = raw if isinstance(raw, str) else str(raw)
 						val = env.from_string(raw).render(cookiecutter=cookiecutter_dict)
 
 						if not no_input:
@@ -173,7 +173,7 @@ class OctoPrintDevelCommands(click.MultiCommand):
 						plugin_source=source,
 						plugin_installurl=installurl
 					)
-					options = dict((k, v) for k, v in raw_options.items() if v is not None)
+					options = dict((k, v) for k, v in list(raw_options.items()) if v is not None)
 
 					with custom_cookiecutter_prompt(options):
 						cookiecutter.main.cookiecutter("gh:OctoPrint/cookiecutter-octoprint-plugin")

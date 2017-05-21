@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -96,7 +96,7 @@ class UserManager(object):
 
 	def _cleanup_sessions(self):
 		import time
-		for session, user in self._session_users_by_session.items():
+		for session, user in list(self._session_users_by_session.items()):
 			if not isinstance(user, SessionUser):
 				continue
 			if user._created + (24 * 60 * 60) < time.time():
@@ -209,7 +209,7 @@ class FilebasedUserManager(UserManager):
 			self._customized = True
 			with open(self._userfile, "r") as f:
 				data = yaml.safe_load(f)
-				for name in data.keys():
+				for name in list(data.keys()):
 					attributes = data[name]
 					apikey = None
 					if "apikey" in attributes:
@@ -229,7 +229,7 @@ class FilebasedUserManager(UserManager):
 			return
 
 		data = {}
-		for name in self._users.keys():
+		for name in list(self._users.keys()):
 			user = self._users[name]
 			data[name] = {
 				"password": user._passwordHash,
@@ -248,7 +248,7 @@ class FilebasedUserManager(UserManager):
 		if not roles:
 			roles = ["user"]
 
-		if username in self._users.keys() and not overwrite:
+		if username in list(self._users.keys()) and not overwrite:
 			raise UserAlreadyExists(username)
 
 		self._users[username] = User(username, UserManager.createPasswordHash(password), active, roles, apikey=apikey)
@@ -256,7 +256,7 @@ class FilebasedUserManager(UserManager):
 		self._save()
 
 	def changeUserActivation(self, username, active):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		if self._users[username]._active != active:
@@ -265,7 +265,7 @@ class FilebasedUserManager(UserManager):
 			self._save()
 
 	def changeUserRoles(self, username, roles):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
@@ -277,7 +277,7 @@ class FilebasedUserManager(UserManager):
 		self.addRolesToUser(username, addedRoles)
 
 	def addRolesToUser(self, username, roles):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
@@ -288,7 +288,7 @@ class FilebasedUserManager(UserManager):
 		self._save()
 
 	def removeRolesFromUser(self, username, roles):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
@@ -299,7 +299,7 @@ class FilebasedUserManager(UserManager):
 		self._save()
 
 	def changeUserPassword(self, username, password):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		passwordHash = UserManager.createPasswordHash(password)
@@ -310,7 +310,7 @@ class FilebasedUserManager(UserManager):
 			self._save()
 
 	def changeUserSetting(self, username, key, value):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
@@ -325,28 +325,28 @@ class FilebasedUserManager(UserManager):
 			raise UnknownUser(username)
 
 		user = self._users[username]
-		for key, value in new_settings.items():
+		for key, value in list(new_settings.items()):
 			old_value = user.get_setting(key)
 			user.set_setting(key, value)
 			self._dirty = self._dirty or old_value != value
 		self._save()
 
 	def getAllUserSettings(self, username):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
 		return user.get_all_settings()
 
 	def getUserSetting(self, username, key):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
 		return user.get_setting(key)
 
 	def generateApiKey(self, username):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
@@ -356,7 +356,7 @@ class FilebasedUserManager(UserManager):
 		return user._apikey
 
 	def deleteApikey(self, username):
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		user = self._users[username]
@@ -367,7 +367,7 @@ class FilebasedUserManager(UserManager):
 	def removeUser(self, username):
 		UserManager.removeUser(self, username)
 
-		if not username in self._users.keys():
+		if not username in list(self._users.keys()):
 			raise UnknownUser(username)
 
 		del self._users[username]
@@ -381,12 +381,12 @@ class FilebasedUserManager(UserManager):
 			return user
 
 		if userid is not None:
-			if userid not in self._users.keys():
+			if userid not in list(self._users.keys()):
 				return None
 			return self._users[userid]
 
 		elif apikey is not None:
-			for user in self._users.values():
+			for user in list(self._users.values()):
 				if apikey == user._apikey:
 					return user
 			return None
@@ -395,7 +395,7 @@ class FilebasedUserManager(UserManager):
 			return None
 
 	def getAllUsers(self):
-		return map(lambda x: x.asDict(), self._users.values())
+		return [x.asDict() for x in list(self._users.values())]
 
 	def hasBeenCustomized(self):
 		return self._customized

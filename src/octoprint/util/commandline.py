@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -75,7 +75,7 @@ class CommandlineCaller(object):
 			joined_command = " ".join(command)
 		else:
 			joined_command = command
-		self._logger.debug(u"Calling: {}".format(joined_command))
+		self._logger.debug("Calling: {}".format(joined_command))
 		self.on_log_call(joined_command)
 
 		kwargs.update(dict(async=True, stdout=sarge.Capture(), stderr=sarge.Capture()))
@@ -94,7 +94,7 @@ class CommandlineCaller(object):
 
 		if not p.commands[0].process:
 			# the process might have been set to None in case of any exception
-			self._logger.error(u"Error while trying to run command {}".format(joined_command))
+			self._logger.error("Error while trying to run command {}".format(joined_command))
 			return None, [], []
 
 		all_stdout = []
@@ -103,7 +103,7 @@ class CommandlineCaller(object):
 		def process_lines(lines, logger):
 			if not lines:
 				return []
-			l = self._preprocess_lines(*map(lambda x: to_unicode(x, errors="replace"), lines))
+			l = self._preprocess_lines(*[to_unicode(x, errors="replace") for x in lines])
 			logger(*l)
 			return list(l)
 

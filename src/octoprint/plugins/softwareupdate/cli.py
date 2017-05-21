@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 __copyright__ = "Copyright (C) 2015 The OctoPrint Project - Released under terms of the AGPLv3 License"
@@ -51,7 +51,7 @@ def commands(cli_group, pass_octoprint_ctx, *args, **kwargs):
 
 		lines = []
 		octoprint_line = None
-		for key, info in information.items():
+		for key, info in list(information.items()):
 			status_text = "Up to date"
 			if info["updateAvailable"]:
 				if info["updatePossible"]:

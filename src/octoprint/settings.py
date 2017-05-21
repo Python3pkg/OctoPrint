@@ -17,7 +17,7 @@ of various types and the configuration file itself.
    :undoc-members:
 """
 
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -34,6 +34,7 @@ import copy
 import time
 
 from builtins import bytes
+import collections
 
 try:
 	from collections import ChainMap
@@ -390,7 +391,7 @@ class HierarchicalChainMap(ChainMap):
 			root = self
 
 		result = dict()
-		for key, value in root.items():
+		for key, value in list(root.items()):
 			if isinstance(value, dict):
 				result[key] = self.deep_dict(root=self.__class__._get_next(key, root))
 			else:
@@ -624,8 +625,8 @@ class Settings(object):
 				templates = []
 				for key in scripts:
 					if isinstance(scripts[key], dict):
-						templates += map(lambda x: key + "/" + x, self._get_templates(scripts[key]))
-					elif isinstance(scripts[key], basestring):
+						templates += [key + "/" + x for x in self._get_templates(scripts[key])]
+					elif isinstance(scripts[key], str):
 						templates.append(key)
 				return templates
 
@@ -720,11 +721,11 @@ class Settings(object):
 
 			elif "children" in result:
 				# if it has children we need to process them recursively
-				result["children"] = map(process_control, [child for child in result["children"] if child is not None])
+				result["children"] = list(map(process_control, [child for child in result["children"] if child is not None]))
 
 			return result
 
-		return map(process_control, controls)
+		return list(map(process_control, controls))
 
 	@property
 	def effective(self):
@@ -820,14 +821,14 @@ class Settings(object):
 	def load_overlay(self, overlay, migrate=True):
 		config = None
 
-		if callable(overlay):
+		if isinstance(overlay, collections.Callable):
 			try:
 				overlay = overlay(self)
 			except:
 				self._logger.exception("Error loading overlay from callable")
 				return
 
-		if isinstance(overlay, basestring):
+		if isinstance(overlay, str):
 			if os.path.exists(overlay) and os.path.isfile(overlay):
 				with open(overlay, "r") as f:
 					config = yaml.safe_load(f)
@@ -889,7 +890,7 @@ class Settings(object):
 					disable_fan="M106 S0"
 				)
 
-				for name, script in config["scripts"]["gcode"].items():
+				for name, script in list(config["scripts"]["gcode"].items()):
 					self.saveScript("gcode", name, script.format(**replacements))
 			del config["scripts"]
 			dirty = True
@@ -964,7 +965,7 @@ class Settings(object):
 		Migrates the old "server > baseUrl" and "server > scheme" configuration entries to
 		"server > reverseProxy > prefixFallback" and "server > reverseProxy > schemeFallback".
 		"""
-		if "server" in config.keys() and ("baseUrl" in config["server"] or "scheme" in config["server"]):
+		if "server" in list(config.keys()) and ("baseUrl" in config["server"] or "scheme" in config["server"]):
 			prefix = ""
 			if "baseUrl" in config["server"]:
 				prefix = config["server"]["baseUrl"]
@@ -991,7 +992,7 @@ class Settings(object):
 		Migrates the old event configuration format of type "events > gcodeCommandTrigger" and
 		"event > systemCommandTrigger" to the new events format.
 		"""
-		if "events" in config.keys() and ("gcodeCommandTrigger" in config["events"] or "systemCommandTrigger" in config["events"]):
+		if "events" in list(config.keys()) and ("gcodeCommandTrigger" in config["events"] or "systemCommandTrigger" in config["events"]):
 			self._logger.info("Migrating config (event subscriptions)...")
 
 			# migrate event hooks to new format
@@ -1223,7 +1224,7 @@ class Settings(object):
 				except:
 					pass
 
-				if callable(preprocessor):
+				if isinstance(preprocessor, collections.Callable):
 					value = preprocessor(value)
 
 			if do_copy:
@@ -1236,7 +1237,7 @@ class Settings(object):
 
 		if not isinstance(last, (list, tuple)):
 			if asdict:
-				return results.values().pop()
+				return list(results.values()).pop()
 			else:
 				return results.pop()
 		else:
@@ -1297,12 +1298,12 @@ class Settings(object):
 			return value
 		if isinstance(value, (int, float)):
 			return value != 0
-		if isinstance(value, (str, unicode)):
+		if isinstance(value, str):
 			return value.lower() in valid_boolean_trues
 		return value is not None
 
 	def getBaseFolder(self, type, create=True):
-		if type not in default_settings["folder"].keys() + ["base"]:
+		if type not in list(default_settings["folder"].keys()) + ["base"]:
 			return None
 
 		if type == "base":
@@ -1321,7 +1322,7 @@ class Settings(object):
 		return folder
 
 	def listScripts(self, script_type):
-		return map(lambda x: x[len(script_type + "/"):], filter(lambda x: x.startswith(script_type + "/"), self._get_scripts(script_type)))
+		return [x[len(script_type + "/"):] for x in [x for x in self._get_scripts(script_type) if x.startswith(script_type + "/")]]
 
 	def loadScript(self, script_type, name, context=None, source=False):
 		if context is None:
@@ -1397,7 +1398,7 @@ class Settings(object):
 		except NoSuchSettingsPath:
 			pass
 
-		if callable(preprocessor):
+		if isinstance(preprocessor, collections.Callable):
 			value = preprocessor(value)
 
 		try:
@@ -1461,25 +1462,25 @@ class Settings(object):
 	def setBoolean(self, path, value, **kwargs):
 		if value is None or isinstance(value, bool):
 			self.set(path, value, **kwargs)
-		elif isinstance(value, basestring) and value.lower() in valid_boolean_trues:
+		elif isinstance(value, str) and value.lower() in valid_boolean_trues:
 			self.set(path, True, **kwargs)
 		else:
 			self.set(path, False, **kwargs)
 
 	def setBaseFolder(self, type, path, force=False):
-		if type not in default_settings["folder"].keys():
+		if type not in list(default_settings["folder"].keys()):
 			return None
 
 		currentPath = self.getBaseFolder(type)
 		defaultPath = self._get_default_folder(type)
-		if (path is None or path == defaultPath) and "folder" in self._config.keys() and type in self._config["folder"].keys():
+		if (path is None or path == defaultPath) and "folder" in list(self._config.keys()) and type in list(self._config["folder"].keys()):
 			del self._config["folder"][type]
 			if not self._config["folder"]:
 				del self._config["folder"]
 			self._dirty = True
 			self._dirty_time = time.time()
 		elif (path != currentPath and path != defaultPath) or force:
-			if not "folder" in self._config.keys():
+			if not "folder" in list(self._config.keys()):
 				self._config["folder"] = {}
 			self._config["folder"][type] = path
 			self._dirty = True

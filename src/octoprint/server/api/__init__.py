@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -21,6 +21,7 @@ from octoprint.server import admin_permission, NO_CONTENT
 from octoprint.settings import settings as s, valid_boolean_trues
 from octoprint.server.util import noCachingExceptGetResponseHandler, enforceApiKeyRequestHandler, loginFromApiKeyRequestHandler, corsRequestHandler, corsResponseHandler
 from octoprint.server.util.flask import restricted_access, get_json_command_from_request, passive_login
+from functools import reduce
 
 
 #~~ init api blueprint, including sub modules
@@ -284,7 +285,7 @@ def utilTestPath():
 		# check if path allows requested access
 		access_mapping = dict(r=os.R_OK, w=os.W_OK, x=os.X_OK)
 		if check_access:
-			access = os.access(path, reduce(lambda x, y: x | y, map(lambda a: access_mapping[a], check_access)))
+			access = os.access(path, reduce(lambda x, y: x | y, [access_mapping[a] for a in check_access]))
 		else:
 			access = exists
 
@@ -365,7 +366,7 @@ def utilTestPath():
 		result = dict(
 			url=url,
 			status=status,
-			result=any(map(lambda x: status in x, check_status))
+			result=any([status in x for x in check_status])
 		)
 
 		if "response" in data and (data["response"] in valid_boolean_trues or data["response"] in ("json", "bytes")):

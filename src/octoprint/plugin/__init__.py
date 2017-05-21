@@ -13,7 +13,7 @@ registered plugin types.
    :members:
 """
 
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -27,6 +27,7 @@ from octoprint.plugin.core import (PluginInfo, PluginManager, Plugin)
 from octoprint.plugin.types import *
 
 from octoprint.util import deprecated
+import collections
 
 # singleton
 _instance = None
@@ -490,7 +491,7 @@ class PluginSettings(object):
 		self.settings.remove(self._prefix_path())
 
 	def __getattr__(self, item):
-		all_access_methods = self.access_methods.keys() + self.deprecated_access_methods.keys()
+		all_access_methods = list(self.access_methods.keys()) + list(self.deprecated_access_methods.keys())
 		if item in all_access_methods:
 			decorator = None
 			if item in self.deprecated_access_methods:
@@ -499,7 +500,7 @@ class PluginSettings(object):
 				item = new
 
 			settings_name, args_mapper, kwargs_mapper = self.access_methods[item]
-			if hasattr(self.settings, settings_name) and callable(getattr(self.settings, settings_name)):
+			if hasattr(self.settings, settings_name) and isinstance(getattr(self.settings, settings_name), collections.Callable):
 				orig_func = getattr(self.settings, settings_name)
 				if decorator is not None:
 					orig_func = decorator(orig_func)

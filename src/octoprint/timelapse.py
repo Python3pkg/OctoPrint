@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 
@@ -14,7 +14,7 @@ import shutil
 try:
 	import queue
 except ImportError:
-	import Queue as queue
+	import queue as queue
 import requests
 
 import octoprint.util as util
@@ -134,7 +134,7 @@ def get_unrendered_timelapses():
 
 			return job
 
-		return sorted([util.dict_merge(dict(name=key), finalize_fields(key, value)) for key, value in jobs.items()], key=lambda x: x["name"])
+		return sorted([util.dict_merge(dict(name=key), finalize_fields(key, value)) for key, value in list(jobs.items())], key=lambda x: x["name"])
 
 
 def delete_unrendered_timelapse(name):
@@ -563,7 +563,7 @@ class Timelapse(object):
 			self._logger.debug("Image {} captured from {}".format(filename, self._snapshot_url))
 		except Exception as e:
 			self._logger.exception("Could not capture image {} from {}".format(filename, self._snapshot_url))
-			if callable(onerror):
+			if isinstance(onerror, collections.Callable):
 				onerror()
 			eventManager().fire(Events.CAPTURE_FAILED, dict(file=filename,
 			                                                error=str(e),
@@ -904,5 +904,5 @@ class TimelapseRenderJob(object):
 		"""Notifies registered callbacks of type `callback`."""
 		name = "_on_{}".format(callback)
 		method = getattr(self, name, None)
-		if method is not None and callable(method):
+		if method is not None and isinstance(method, collections.Callable):
 			method(*args, **kwargs)

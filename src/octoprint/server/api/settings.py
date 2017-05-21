@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -266,22 +266,22 @@ def _saveSettings(data):
 	# NOTE: Remember to adjust the docs of the data model on the Settings API if anything
 	# is changed, added or removed here
 
-	if "api" in data.keys():
+	if "api" in list(data.keys()):
 		if "enabled" in data["api"]: s.setBoolean(["api", "enabled"], data["api"]["enabled"])
 		if "key" in data["api"] and data["api"]["key"] and data["api"]["key"] != "n/a": s.set(["api", "key"], data["api"]["key"], True)
 		if "allowCrossOrigin" in data["api"]: s.setBoolean(["api", "allowCrossOrigin"], data["api"]["allowCrossOrigin"])
 
-	if "appearance" in data.keys():
+	if "appearance" in list(data.keys()):
 		if "name" in data["appearance"]: s.set(["appearance", "name"], data["appearance"]["name"])
 		if "color" in data["appearance"]: s.set(["appearance", "color"], data["appearance"]["color"])
 		if "colorTransparent" in data["appearance"]: s.setBoolean(["appearance", "colorTransparent"], data["appearance"]["colorTransparent"])
 		if "defaultLanguage" in data["appearance"]: s.set(["appearance", "defaultLanguage"], data["appearance"]["defaultLanguage"])
 		if "showFahrenheitAlso" in data["appearance"]: s.setBoolean(["appearance", "showFahrenheitAlso"], data["appearance"]["showFahrenheitAlso"])
 
-	if "printer" in data.keys():
+	if "printer" in list(data.keys()):
 		if "defaultExtrusionLength" in data["printer"]: s.setInt(["printerParameters", "defaultExtrusionLength"], data["printer"]["defaultExtrusionLength"])
 
-	if "webcam" in data.keys():
+	if "webcam" in list(data.keys()):
 		if "streamUrl" in data["webcam"]: s.set(["webcam", "stream"], data["webcam"]["streamUrl"])
 		if "snapshotUrl" in data["webcam"]: s.set(["webcam", "snapshot"], data["webcam"]["snapshotUrl"])
 		if "ffmpegPath" in data["webcam"]: s.set(["webcam", "ffmpeg"], data["webcam"]["ffmpegPath"])
@@ -292,7 +292,7 @@ def _saveSettings(data):
 		if "flipV" in data["webcam"]: s.setBoolean(["webcam", "flipV"], data["webcam"]["flipV"])
 		if "rotate90" in data["webcam"]: s.setBoolean(["webcam", "rotate90"], data["webcam"]["rotate90"])
 
-	if "feature" in data.keys():
+	if "feature" in list(data.keys()):
 		if "gcodeViewer" in data["feature"]: s.setBoolean(["gcodeViewer", "enabled"], data["feature"]["gcodeViewer"])
 		if "sizeThreshold" in data["feature"]: s.setInt(["gcodeViewer", "sizeThreshold"], data["feature"]["sizeThreshold"])
 		if "mobileSizeThreshold" in data["feature"]: s.setInt(["gcodeViewer", "mobileSizeThreshold"], data["feature"]["mobileSizeThreshold"])
@@ -314,7 +314,7 @@ def _saveSettings(data):
 		if "printCancelConfirmation" in data["feature"]: s.setBoolean(["feature", "printCancelConfirmation"], data["feature"]["printCancelConfirmation"])
 		if "blockWhileDwelling" in data["feature"]: s.setBoolean(["feature", "blockWhileDwelling"], data["feature"]["blockWhileDwelling"])
 
-	if "serial" in data.keys():
+	if "serial" in list(data.keys()):
 		if "autoconnect" in data["serial"]: s.setBoolean(["serial", "autoconnect"], data["serial"]["autoconnect"])
 		if "port" in data["serial"]: s.set(["serial", "port"], data["serial"]["port"])
 		if "baudrate" in data["serial"]: s.setInt(["serial", "baudrate"], data["serial"]["baudrate"])
@@ -348,27 +348,27 @@ def _saveSettings(data):
 			logging.getLogger("SERIAL").setLevel(logging.DEBUG)
 			logging.getLogger("SERIAL").debug("Enabling serial logging")
 
-	if "folder" in data.keys():
+	if "folder" in list(data.keys()):
 		if "uploads" in data["folder"]: s.setBaseFolder("uploads", data["folder"]["uploads"])
 		if "timelapse" in data["folder"]: s.setBaseFolder("timelapse", data["folder"]["timelapse"])
 		if "timelapseTmp" in data["folder"]: s.setBaseFolder("timelapse_tmp", data["folder"]["timelapseTmp"])
 		if "logs" in data["folder"]: s.setBaseFolder("logs", data["folder"]["logs"])
 		if "watched" in data["folder"]: s.setBaseFolder("watched", data["folder"]["watched"])
 
-	if "temperature" in data.keys():
+	if "temperature" in list(data.keys()):
 		if "profiles" in data["temperature"]: s.set(["temperature", "profiles"], data["temperature"]["profiles"])
 		if "cutoff" in data["temperature"]: s.setInt(["temperature", "cutoff"], data["temperature"]["cutoff"])
 
-	if "terminalFilters" in data.keys():
+	if "terminalFilters" in list(data.keys()):
 		s.set(["terminalFilters"], data["terminalFilters"])
 
-	if "system" in data.keys():
+	if "system" in list(data.keys()):
 		if "actions" in data["system"]: s.set(["system", "actions"], data["system"]["actions"])
 		if "events" in data["system"]: s.set(["system", "events"], data["system"]["events"])
 
 	if "scripts" in data:
 		if "gcode" in data["scripts"] and isinstance(data["scripts"]["gcode"], dict):
-			for name, script in data["scripts"]["gcode"].items():
+			for name, script in list(data["scripts"]["gcode"].items()):
 				if name == "snippets":
 					continue
 				s.saveScript("gcode", name, script.replace("\r\n", "\n").replace("\r", "\n"))

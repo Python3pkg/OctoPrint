@@ -20,7 +20,7 @@ way and could be extracted into a separate Python module in the future.
 
 """
 
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -34,6 +34,7 @@ import logging
 
 import pkg_resources
 import pkginfo
+import collections
 
 try:
 	from os import scandir
@@ -520,7 +521,7 @@ class PluginManager(object):
 
 	@property
 	def plugin_hooks(self):
-		return {key: map(lambda v: (v[1], v[2]), value) for key, value in self._plugin_hooks.items()}
+		return {key: [(v[1], v[2]) for v in value] for key, value in list(self._plugin_hooks.items())}
 
 	def find_plugins(self, existing=None, ignore_uninstalled=True):
 		if existing is None:
@@ -677,17 +678,17 @@ class PluginManager(object):
 
 	def reload_plugins(self, startup=False, initialize_implementations=True, force_reload=None):
 		self.logger.info("Loading plugins from {folders} and installed plugin packages...".format(
-			folders=", ".join(map(lambda x: x[0] if isinstance(x, tuple) else str(x), self.plugin_folders))
+			folders=", ".join([x[0] if isinstance(x, tuple) else str(x) for x in self.plugin_folders])
 		))
 
 		if force_reload is None:
 			force_reload = []
 
-		plugins = self.find_plugins(existing=dict((k, v) for k, v in self.plugins.items() if not k in force_reload))
+		plugins = self.find_plugins(existing=dict((k, v) for k, v in list(self.plugins.items()) if not k in force_reload))
 		self.disabled_plugins.update(plugins)
 
 		# 1st pass: loading the plugins
-		for name, plugin in plugins.items():
+		for name, plugin in list(plugins.items()):
 			try:
 				self.load_plugin(name, plugin, startup=startup, initialize_implementation=initialize_implementations)
 			except PluginNeedsRestart:
@@ -700,7 +701,7 @@ class PluginManager(object):
 							   force_reload=force_reload)
 
 		# 2nd pass: enabling those plugins that need enabling
-		for name, plugin in plugins.items():
+		for name, plugin in list(plugins.items()):
 			try:
 				if plugin.loaded and not self._is_plugin_disabled(name):
 					self.enable_plugin(name, plugin=plugin, initialize_implementation=initialize_implementations, startup=startup)
@@ -719,14 +720,14 @@ class PluginManager(object):
 			self.logger.info("Found {count} plugin(s) providing {implementations} mixin implementations, {hooks} hook handlers".format(
 				count=len(self.enabled_plugins) + len(self.disabled_plugins),
 				implementations=len(self.plugin_implementations),
-				hooks=sum(map(lambda x: len(x), self.plugin_hooks.values()))
+				hooks=sum([len(x) for x in list(self.plugin_hooks.values())])
 			))
 
 	def mark_plugin(self, name, **kwargs):
 		if not name in self.plugins:
 			self.logger.debug("Trying to mark an unknown plugin {name}".format(**locals()))
 
-		for key, value in kwargs.items():
+		for key, value in list(kwargs.items()):
 			if value is None:
 				continue
 
@@ -878,7 +879,7 @@ class PluginManager(object):
 		plugin.hotchangeable = self.is_restart_needing_plugin(plugin)
 
 		# evaluate registered hooks
-		for hook, definition in plugin.hooks.items():
+		for hook, definition in list(plugin.hooks.items()):
 			try:
 				callback, order = self._get_callback_and_order(definition)
 			except ValueError as e:
@@ -897,7 +898,7 @@ class PluginManager(object):
 			self.plugin_implementations[name] = plugin.implementation
 
 	def _deactivate_plugin(self, name, plugin):
-		for hook, definition in plugin.hooks.items():
+		for hook, definition in list(plugin.hooks.items()):
 			try:
 				callback, order = self._get_callback_and_order(definition)
 			except ValueError as e:
@@ -935,7 +936,7 @@ class PluginManager(object):
 		if not plugin.hooks:
 			return False
 
-		hooks = plugin.hooks.keys()
+		hooks = list(plugin.hooks.keys())
 		for hook in hooks:
 			if self.is_restart_needing_hook(hook):
 				return True
@@ -945,7 +946,7 @@ class PluginManager(object):
 		if not plugin.hooks:
 			return False
 
-		hooks = plugin.hooks.keys()
+		hooks = list(plugin.hooks.keys())
 		for hook in hooks:
 			if self.is_obsolete_hook(hook):
 				return True
@@ -967,7 +968,7 @@ class PluginManager(object):
 		return hook in self.plugin_obsolete_hooks
 
 	def initialize_implementations(self, additional_injects=None, additional_inject_factories=None, additional_pre_inits=None, additional_post_inits=None):
-		for name, plugin in self.enabled_plugins.items():
+		for name, plugin in list(self.enabled_plugins.items()):
 			self.initialize_implementation_of_plugin(name, plugin,
 			                                         additional_injects=additional_injects,
 			                                         additional_inject_factories=additional_inject_factories,
@@ -1021,7 +1022,7 @@ class PluginManager(object):
 				))
 
 			# inject the additional_injects
-			for arg, value in kwargs.items():
+			for arg, value in list(kwargs.items()):
 				setattr(implementation, "_" + arg, value)
 
 			# inject any injects produced in the additional_inject_factories
@@ -1033,7 +1034,7 @@ class PluginManager(object):
 				else:
 					if return_value is not None:
 						if isinstance(return_value, dict):
-							for arg, value in return_value.items():
+							for arg, value in list(return_value.items()):
 								setattr(implementation, "_" + arg, value)
 
 			# execute any additional pre init methods
@@ -1065,7 +1066,7 @@ class PluginManager(object):
 	def log_all_plugins(self, show_bundled=True, bundled_str=(" (bundled)", ""), show_location=True,
 	                    location_str=" = {location}", show_enabled=True, enabled_str=(" ", "!"),
 	                    only_to_handler=None):
-		all_plugins = self.enabled_plugins.values() + self.disabled_plugins.values()
+		all_plugins = list(self.enabled_plugins.values()) + list(self.disabled_plugins.values())
 
 		def _log(message, level=logging.INFO):
 			if only_to_handler is not None:
@@ -1077,13 +1078,12 @@ class PluginManager(object):
 		if len(all_plugins) <= 0:
 			_log("No plugins available")
 		else:
-			formatted_plugins = "\n".join(map(lambda x: "| " + x.long_str(show_bundled=show_bundled,
+			formatted_plugins = "\n".join(["| " + x.long_str(show_bundled=show_bundled,
 				                                                          bundled_strs=bundled_str,
 				                                                          show_location=show_location,
 				                                                          location_str=location_str,
 				                                                          show_enabled=show_enabled,
-				                                                          enabled_strs=enabled_str),
-				                              sorted(self.plugins.values(), key=lambda x: str(x).lower())))
+				                                                          enabled_strs=enabled_str) for x in sorted(list(self.plugins.values()), key=lambda x: str(x).lower())])
 			_log("{count} plugin(s) registered with the system:\n{plugins}".format(count=len(all_plugins),
 			                                                                       plugins=formatted_plugins))
 
@@ -1202,9 +1202,9 @@ class PluginManager(object):
 		    list: A list of all found and matching implementations.
 		"""
 
-		assert callable(f)
+		assert isinstance(f, collections.Callable)
 		implementations = self.get_implementations(*types, sorting_context=kwargs.get("sorting_context", None))
-		return filter(f, implementations)
+		return list(filter(f, implementations))
 
 	def get_helpers(self, name, *helpers):
 		"""
@@ -1228,7 +1228,7 @@ class PluginManager(object):
 
 		all_helpers = plugin.helpers
 		if len(helpers):
-			return dict((k, v) for (k, v) in all_helpers.items() if k in helpers)
+			return dict((k, v) for (k, v) in list(all_helpers.items()) if k in helpers)
 		else:
 			return all_helpers
 
@@ -1268,14 +1268,14 @@ class PluginManager(object):
 		                                  key=lambda x: (x[0] is None, x[0], x[1], x[2]))
 
 	def _get_callback_and_order(self, hook):
-		if callable(hook):
+		if isinstance(hook, collections.Callable):
 			return hook, None
 
 		elif isinstance(hook, tuple) and len(hook) == 2:
 			callback, order = hook
 
 			# test that callback is a callable
-			if not callable(callback):
+			if not isinstance(callback, collections.Callable):
 				raise ValueError("Hook callback is not a callable")
 
 			# test that number is an int

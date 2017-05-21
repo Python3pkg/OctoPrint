@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 __copyright__ = "Copyright (C) 2015 The OctoPrint Project - Released under terms of the AGPLv3 License"
@@ -52,8 +52,8 @@ class BomAwareOpenTest(unittest.TestCase):
 
 		# assert
 		self.assertEqual(len(contents), 3)
-		self.assertTrue(contents[0].startswith(u"\ufffd" * 3 + "#"))
-		self.assertTrue(contents[2].endswith(u"\ufffd\ufffd" * 6))
+		self.assertTrue(contents[0].startswith("\ufffd" * 3 + "#"))
+		self.assertTrue(contents[2].endswith("\ufffd\ufffd" * 6))
 
 	def test_bom_aware_open_encoding_error(self):
 		"""Tests that an encoding error is thrown if not suppressed when opening a UTF8 file as ASCII."""
@@ -342,7 +342,7 @@ class IsHiddenPathTest(unittest.TestCase):
 			# we use ctypes and the windows API to set the hidden attribute on the file
 			# only hidden on windows
 			import ctypes
-			ctypes.windll.kernel32.SetFileAttributesW(unicode(self.path_hidden_on_windows), 2)
+			ctypes.windll.kernel32.SetFileAttributesW(str(self.path_hidden_on_windows), 2)
 
 	def tearDown(self):
 		import shutil

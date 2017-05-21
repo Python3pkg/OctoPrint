@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 import sys
 import logging as log
@@ -8,6 +8,7 @@ import logging as log
 #~~ version
 
 from ._version import get_versions
+import collections
 versions = get_versions()
 
 __version__ = versions['version']
@@ -66,12 +67,12 @@ def init_platform(basedir, configfile, use_logging_file=True, logging_file=None,
 	kwargs["logger"] = logger
 	kwargs["recorder"] = recorder
 
-	if callable(after_preinit_logging):
+	if isinstance(after_preinit_logging, collections.Callable):
 		after_preinit_logging(**kwargs)
 
 	settings = init_settings(basedir, configfile)
 	kwargs["settings"] = settings
-	if callable(after_settings):
+	if isinstance(after_settings, collections.Callable):
 		after_settings(**kwargs)
 
 	logger = init_logging(settings,
@@ -84,20 +85,20 @@ def init_platform(basedir, configfile, use_logging_file=True, logging_file=None,
 	                      uncaught_handler=uncaught_handler)
 	kwargs["logger"] = logger
 
-	if callable(after_logging):
+	if isinstance(after_logging, collections.Callable):
 		after_logging(**kwargs)
 
 	settings_safe_mode = settings.getBoolean(["server", "startOnceInSafeMode"])
 	safe_mode = safe_mode or settings_safe_mode
 	kwargs["safe_mode"] = safe_mode
 
-	if callable(after_safe_mode):
+	if isinstance(after_safe_mode, collections.Callable):
 		after_safe_mode(**kwargs)
 
 	plugin_manager = init_pluginsystem(settings, safe_mode=safe_mode)
 	kwargs["plugin_manager"] = plugin_manager
 
-	if callable(after_plugin_manager):
+	if isinstance(after_plugin_manager, collections.Callable):
 		after_plugin_manager(**kwargs)
 
 	return settings, logger, safe_mode, plugin_manager
@@ -340,7 +341,7 @@ def init_pluginsystem(settings, safe_mode=False):
 		if not startup:
 			return
 
-		sorted_disabled_from_overlays = sorted([(key, value[0], value[1]) for key, value in disabled_from_overlays.items()], key=lambda x: (x[2] is None, x[2], x[0]))
+		sorted_disabled_from_overlays = sorted([(key, value[0], value[1]) for key, value in list(disabled_from_overlays.items())], key=lambda x: (x[2] is None, x[2], x[0]))
 
 		disabled_list = pm.plugin_disabled_list
 		already_processed = []

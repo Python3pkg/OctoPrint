@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -60,8 +60,8 @@ class PrinterStateConnection(sockjs.tornado.SockJSConnection, octoprint.printer.
 		self._logger.info("New connection from client: %s" % self._remoteAddress)
 
 		plugin_signature = lambda impl: "{}:{}".format(impl._identifier, impl._plugin_version)
-		template_plugins = map(plugin_signature, self._pluginManager.get_implementations(octoprint.plugin.TemplatePlugin))
-		asset_plugins = map(plugin_signature, self._pluginManager.get_implementations(octoprint.plugin.AssetPlugin))
+		template_plugins = list(map(plugin_signature, self._pluginManager.get_implementations(octoprint.plugin.TemplatePlugin)))
+		asset_plugins = list(map(plugin_signature, self._pluginManager.get_implementations(octoprint.plugin.AssetPlugin)))
 		ui_plugins = sorted(set(template_plugins + asset_plugins))
 
 		import hashlib

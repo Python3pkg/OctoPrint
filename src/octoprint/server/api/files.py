@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -44,7 +44,7 @@ def _create_lastmodified(path, recursive):
 				logging.getLogger(__name__).exception("There was an error retrieving the last modified data from storage {}".format(storage))
 				lms.append(None)
 
-		if filter(lambda x: x is None, lms):
+		if [x for x in lms if x is None]:
 			# we return None if ANY of the involved storages returned None
 			return None
 
@@ -171,7 +171,7 @@ def _getFileList(origin, path=None, filter=None, recursive=False):
 		with _file_cache_mutex:
 			files, lastmodified = _file_cache.get("{}:{}:{}:{}".format(origin, path, recursive, filter), ([], None))
 			if lastmodified is None or lastmodified < fileManager.last_modified(origin, path=path, recursive=recursive):
-				files = fileManager.list_files(origin, path=path, filter=filter_func, recursive=recursive)[origin].values()
+				files = list(fileManager.list_files(origin, path=path, filter=filter_func, recursive=recursive)[origin].values())
 				lastmodified = fileManager.last_modified(origin, path=path, recursive=recursive)
 				_file_cache["{}:{}:{}:{}".format(origin, path, recursive, filter)] = (files, lastmodified)
 
@@ -188,7 +188,7 @@ def _getFileList(origin, path=None, filter=None, recursive=False):
 
 				if file_or_folder["type"] == "folder":
 					if "children" in file_or_folder:
-						file_or_folder["children"] = analyse_recursively(file_or_folder["children"].values(), path + file_or_folder["name"] + "/")
+						file_or_folder["children"] = analyse_recursively(list(file_or_folder["children"].values()), path + file_or_folder["name"] + "/")
 
 					file_or_folder["refs"] = dict(resource=url_for(".readGcodeFile", target=FileDestinations.LOCAL, filename=path + file_or_folder["name"], _external=True))
 				else:
@@ -235,7 +235,7 @@ def _getFileList(origin, path=None, filter=None, recursive=False):
 
 def _verifyFileExists(origin, filename):
 	if origin == FileDestinations.SDCARD:
-		return filename in map(lambda x: x[0], printer.get_sd_files())
+		return filename in [x[0] for x in printer.get_sd_files()]
 	else:
 		return fileManager.file_exists(origin, filename)
 
@@ -279,8 +279,8 @@ def uploadGcodeFile(target):
 			return make_response("SD card support is disabled", 404)
 
 		sd = target == FileDestinations.SDCARD
-		selectAfterUpload = "select" in request.values.keys() and request.values["select"] in valid_boolean_trues
-		printAfterSelect = "print" in request.values.keys() and request.values["print"] in valid_boolean_trues
+		selectAfterUpload = "select" in list(request.values.keys()) and request.values["select"] in valid_boolean_trues
+		printAfterSelect = "print" in list(request.values.keys()) and request.values["print"] in valid_boolean_trues
 
 		if sd:
 			# validate that all preconditions for SD upload are met before attempting it
@@ -486,7 +486,7 @@ def gcodeFileCommand(filename, target):
 			return make_response("Cannot select {filename} for printing, not a machinecode file".format(**locals()), 415)
 
 		printAfterLoading = False
-		if "print" in data.keys() and data["print"] in valid_boolean_trues:
+		if "print" in list(data.keys()) and data["print"] in valid_boolean_trues:
 			if not printer.is_operational():
 				return make_response("Printer is not operational, cannot directly start printing", 409)
 			printAfterLoading = True
@@ -549,32 +549,32 @@ def gcodeFileCommand(filename, target):
 		if currentFilename == full_path and currentOrigin == target and (printer.is_printing() or printer.is_paused()):
 			make_response("Trying to slice into file that is currently being printed: %s" % full_path, 409)
 
-		if "profile" in data.keys() and data["profile"]:
+		if "profile" in list(data.keys()) and data["profile"]:
 			profile = data["profile"]
 			del data["profile"]
 		else:
 			profile = None
 
-		if "printerProfile" in data.keys() and data["printerProfile"]:
+		if "printerProfile" in list(data.keys()) and data["printerProfile"]:
 			printerProfile = data["printerProfile"]
 			del data["printerProfile"]
 		else:
 			printerProfile = None
 
-		if "position" in data.keys() and data["position"] and isinstance(data["position"], dict) and "x" in data["position"] and "y" in data["position"]:
+		if "position" in list(data.keys()) and data["position"] and isinstance(data["position"], dict) and "x" in data["position"] and "y" in data["position"]:
 			position = data["position"]
 			del data["position"]
 		else:
 			position = None
 
 		select_after_slicing = False
-		if "select" in data.keys() and data["select"] in valid_boolean_trues:
+		if "select" in list(data.keys()) and data["select"] in valid_boolean_trues:
 			if not printer.is_operational():
 				return make_response("Printer is not operational, cannot directly select for printing", 409)
 			select_after_slicing = True
 
 		print_after_slicing = False
-		if "print" in data.keys() and data["print"] in valid_boolean_trues:
+		if "print" in list(data.keys()) and data["print"] in valid_boolean_trues:
 			if not printer.is_operational():
 				return make_response("Printer is not operational, cannot directly start printing", 409)
 			select_after_slicing = print_after_slicing = True
@@ -726,7 +726,7 @@ def deleteGcodeFile(filename, target):
 
 def _getCurrentFile():
 	currentJob = printer.get_current_job()
-	if currentJob is not None and "file" in currentJob.keys() and "path" in currentJob["file"] and "origin" in currentJob["file"]:
+	if currentJob is not None and "file" in list(currentJob.keys()) and "path" in currentJob["file"] and "origin" in currentJob["file"]:
 		return currentJob["file"]["origin"], currentJob["file"]["path"]
 	else:
 		return None, None

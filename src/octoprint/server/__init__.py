@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -24,6 +24,7 @@ import logging.config
 import atexit
 import signal
 import base64
+import collections
 
 SUCCESS = {}
 NO_CONTENT = ("", 204)
@@ -227,7 +228,7 @@ class Server(object):
 
 		# create printer instance
 		printer_factories = pluginManager.get_hooks("octoprint.printer.factory")
-		for name, factory in printer_factories.items():
+		for name, factory in list(printer_factories.items()):
 			try:
 				printer = factory(components)
 				if printer is not None:
@@ -412,7 +413,7 @@ class Server(object):
 		]
 
 		# fetch additional routes from plugins
-		for name, hook in pluginManager.get_hooks("octoprint.server.http.routes").items():
+		for name, hook in list(pluginManager.get_hooks("octoprint.server.http.routes").items()):
 			try:
 				result = hook(list(server_routes))
 			except:
@@ -422,7 +423,7 @@ class Server(object):
 					for entry in result:
 						if not isinstance(entry, tuple) or not len(entry) == 3:
 							continue
-						if not isinstance(entry[0], basestring):
+						if not isinstance(entry[0], str):
 							continue
 						if not isinstance(entry[2], dict):
 							continue
@@ -442,7 +443,7 @@ class Server(object):
 		]
 
 		# allow plugins to extend allowed maximum body sizes
-		for name, hook in pluginManager.get_hooks("octoprint.server.http.bodysize").items():
+		for name, hook in list(pluginManager.get_hooks("octoprint.server.http.bodysize").items()):
 			try:
 				result = hook(list(max_body_sizes))
 			except:
@@ -722,14 +723,14 @@ class Server(object):
 		def externalize_links(text):
 			def repl(match):
 				tag = match.group("tag")
-				if not u"href" in tag:
+				if not "href" in tag:
 					return match.group(0)
 
-				if not u"target=" in tag and not u"rel=" in tag:
-					tag += u" target=\"_blank\" rel=\"noreferrer noopener\""
+				if not "target=" in tag and not "rel=" in tag:
+					tag += " target=\"_blank\" rel=\"noreferrer noopener\""
 
 				content = match.group("content")
-				return u"<{tag}>{content}</a>".format(tag=tag, content=content)
+				return "<{tag}>{content}</a>".format(tag=tag, content=content)
 			return html_link_regex.sub(repl, text)
 
 		app.jinja_env.filters["regex_replace"] = regex_replace
@@ -783,12 +784,12 @@ class Server(object):
 			return all([f(entry) for f in filters])
 
 		# filter out all old and non-http entries
-		cache_data = preemptive_cache.clean_all_data(lambda root, entries: filter(filter_entries, entries))
+		cache_data = preemptive_cache.clean_all_data(lambda root, entries: list(filter(filter_entries, entries)))
 		if not cache_data:
 			return
 
 		def execute_caching():
-			for route in sorted(cache_data.keys(), key=lambda x: (x.count("/"), x)):
+			for route in sorted(list(cache_data.keys()), key=lambda x: (x.count("/"), x)):
 				entries = reversed(sorted(cache_data[route], key=lambda x: x.get("_count", 0)))
 				for kwargs in entries:
 					plugin = kwargs.get("plugin", None)
@@ -811,7 +812,7 @@ class Server(object):
 							continue
 
 					additional_request_data = kwargs.get("_additional_request_data", dict())
-					kwargs = dict((k, v) for k, v in kwargs.items() if not k.startswith("_") and not k == "plugin")
+					kwargs = dict((k, v) for k, v in list(kwargs.items()) if not k.startswith("_") and not k == "plugin")
 					kwargs.update(additional_request_data)
 
 					try:
@@ -1192,8 +1193,8 @@ class Server(object):
 		assets.register("less_app", less_app_bundle)
 
 	def _start_intermediary_server(self):
-		import BaseHTTPServer
-		import SimpleHTTPServer
+		import http.server
+		import http.server
 		import threading
 
 		host = self._host
@@ -1205,12 +1206,12 @@ class Server(object):
 
 		self._logger.debug("Starting intermediary server on {}:{}".format(host, port))
 
-		class IntermediaryServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+		class IntermediaryServerHandler(http.server.SimpleHTTPRequestHandler):
 			def __init__(self, rules=None, *args, **kwargs):
 				if rules is None:
 					rules = []
 				self.rules = rules
-				SimpleHTTPServer.SimpleHTTPRequestHandler.__init__(self, *args, **kwargs)
+				http.server.SimpleHTTPRequestHandler.__init__(self, *args, **kwargs)
 
 			def do_GET(self):
 				request_path = self.path
@@ -1258,9 +1259,9 @@ class Server(object):
 
 			return path, data, content_type
 
-		rules = map(process, filter(lambda rule: len(rule) == 2 or len(rule) == 3, rules))
+		rules = list(map(process, [rule for rule in rules if len(rule) == 2 or len(rule) == 3]))
 
-		self._intermediary_server = BaseHTTPServer.HTTPServer((host, port), lambda *args, **kwargs: IntermediaryServerHandler(rules, *args, **kwargs))
+		self._intermediary_server = http.server.HTTPServer((host, port), lambda *args, **kwargs: IntermediaryServerHandler(rules, *args, **kwargs))
 
 		thread = threading.Thread(target=self._intermediary_server.serve_forever)
 		thread.daemon = True
@@ -1287,9 +1288,9 @@ class LifecycleManager(object):
 			orig_handler = getattr(self._plugin_manager, "on_plugin_" + lifecycle_event)
 
 			def handler(*args, **kwargs):
-				if callable(orig_handler):
+				if isinstance(orig_handler, collections.Callable):
 					orig_handler(*args, **kwargs)
-				if callable(new_handler):
+				if isinstance(new_handler, collections.Callable):
 					new_handler(*args, **kwargs)
 
 			return handler
@@ -1307,7 +1308,7 @@ class LifecycleManager(object):
 			lifecycle_callback(name, plugin)
 
 	def add_callback(self, events, callback):
-		if isinstance(events, (str, unicode)):
+		if isinstance(events, str):
 			events = [events]
 
 		for event in events:
@@ -1319,7 +1320,7 @@ class LifecycleManager(object):
 				if callback in self._plugin_lifecycle_callbacks[event]:
 					self._plugin_lifecycle_callbacks[event].remove(callback)
 		else:
-			if isinstance(events, (str, unicode)):
+			if isinstance(events, str):
 				events = [events]
 
 			for event in events:

@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -99,7 +99,7 @@ def uploadLanguagePack():
 	upload_name = request.values[input_upload_name]
 	upload_path = request.values[input_upload_path]
 
-	exts = filter(lambda x: upload_name.lower().endswith(x), (".zip", ".tar.gz", ".tgz", ".tar"))
+	exts = [x for x in (".zip", ".tar.gz", ".tgz", ".tar") if upload_name.lower().endswith(x)]
 	if not len(exts):
 		return make_response("File doesn't have a valid extension for a language pack archive", 400)
 
@@ -133,7 +133,7 @@ def deleteInstalledLanguagePack(locale, pack):
 def _unpack_uploaded_zipfile(path, target):
 	with zipfile.ZipFile(path, "r") as zip:
 		# sanity check
-		map(_validate_archive_name, zip.namelist())
+		list(map(_validate_archive_name, zip.namelist()))
 
 		# unpack everything
 		zip.extractall(target)
@@ -141,7 +141,7 @@ def _unpack_uploaded_zipfile(path, target):
 def _unpack_uploaded_tarball(path, target):
 	with tarfile.open(path, "r") as tar:
 		# sanity check
-		map(_validate_archive_name, tar.getmembers())
+		list(map(_validate_archive_name, tar.getmembers()))
 
 		# unpack everything
 		tar.extractall(target)

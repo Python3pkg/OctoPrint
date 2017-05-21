@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division, print_function
+
 avrChipDB = {
 	'ATMega1280': {
 		'signature': [0x1E, 0x97, 0x03],
@@ -13,7 +13,7 @@ avrChipDB = {
 }
 
 def getChipFromDB(sig):
-	for chip in avrChipDB.values():
+	for chip in list(avrChipDB.values()):
 		if chip['signature'] == sig:
 			return chip
 	return False

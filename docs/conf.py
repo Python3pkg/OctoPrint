@@ -49,8 +49,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'OctoPrint'
-copyright = u'%d-%d, Gina Häußge' % (year_since, year_current) if year_current > year_since else u'%d, Gina Häußge' % year_since
+project = 'OctoPrint'
+copyright = '%d-%d, Gina Häußge' % (year_since, year_current) if year_current > year_since else '%d, Gina Häußge' % year_since
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -237,8 +237,8 @@ htmlhelp_basename = 'OctoPrintdoc'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'octoprint', u'OctoPrint Documentation',
-     [u'Gina Häußge'], 1)
+    ('index', 'octoprint', 'OctoPrint Documentation',
+     ['Gina Häußge'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -251,8 +251,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'OctoPrint', u'OctoPrint Documentation',
-   u'Gina Häußge', 'OctoPrint', 'One line description of project.',
+  ('index', 'OctoPrint', 'OctoPrint Documentation',
+   'Gina Häußge', 'OctoPrint', 'One line description of project.',
    'Miscellaneous'),
 ]
 

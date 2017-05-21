@@ -348,11 +348,11 @@ https://creativecommons.org/publicdomain/zero/1.0/ .
 
 """
 
-from __future__ import print_function
+
 try:
     import configparser
 except ImportError:
-    import ConfigParser as configparser
+    import configparser as configparser
 import errno
 import json
 import os
@@ -1336,7 +1336,7 @@ def git_parse_lookup_file(path):
                 continue
 
             try:
-                split_line = map(lambda x: x.strip(), line.split())
+                split_line = [x.strip() for x in line.split()]
                 if not len(split_line):
                     continue
 

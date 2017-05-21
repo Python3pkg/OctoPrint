@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -86,13 +86,13 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 				check_providers = self._settings.get(["check_providers"], merged=True)
 				effective_configs = dict()
 
-				for name, hook in update_check_hooks.items():
+				for name, hook in list(update_check_hooks.items()):
 					try:
 						hook_checks = hook()
 					except:
 						self._logger.exception("Error while retrieving update information from plugin {name}".format(**locals()))
 					else:
-						for key, default_config in hook_checks.items():
+						for key, default_config in list(hook_checks.items()):
 							if key in effective_configs or key == "octoprint":
 								if key == name:
 									self._logger.warn("Software update hook {} provides check for itself but that was already registered by {} - overwriting that third party registration now!".format(name, check_providers.get(key, "unknown hook")))
@@ -125,7 +125,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 								self._logger.warn("Update for {} is empty or None, ignoring it".format(key))
 
 				# finally set all our internal representations to our processed results
-				for key, config in effective_configs.items():
+				for key, config in list(effective_configs.items()):
 					self._configured_checks[key] = config
 
 				self._settings.set(["check_providers"], check_providers)
@@ -136,8 +136,8 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 				config_checks = self._settings.get(["checks"])
 				plugin_and_not_enabled = lambda k: k in check_providers and \
 				                                   not check_providers[k] in self._plugin_manager.enabled_plugins
-				obsolete_plugin_checks = filter(plugin_and_not_enabled,
-				                                config_checks.keys())
+				obsolete_plugin_checks = list(filter(plugin_and_not_enabled,
+				                                list(config_checks.keys())))
 				for key in obsolete_plugin_checks:
 					self._logger.debug("Check for key {} was provided by plugin {} that's no longer available, ignoring it".format(key, check_providers[key]))
 					del self._configured_checks[key]
@@ -408,7 +408,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 		if delete is None:
 			delete = []
 
-		for k, v in data.items():
+		for k, v in list(data.items()):
 			if k in defaults and defaults[k] == data[k]:
 				del data[k]
 
@@ -435,7 +435,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 	@restricted_access
 	def check_for_update(self):
 		if "check" in flask.request.values:
-			check_targets = map(lambda x: x.strip(), flask.request.values["check"].split(","))
+			check_targets = [x.strip() for x in flask.request.values["check"].split(",")]
 		else:
 			check_targets = None
 
@@ -446,7 +446,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 				information, update_available, update_possible = self.get_current_versions(check_targets=check_targets, force=force)
 
 				# we don't want to transfer python_checker or python_updater values through json - replace with True
-				for key, data in information.items():
+				for key, data in list(information.items()):
 					if "check" in data:
 						if "python_checker" in data["check"]:
 							data["check"]["python_checker"] = True
@@ -463,7 +463,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 
 			targets = check_targets
 			if targets is None:
-				targets = checks.keys()
+				targets = list(checks.keys())
 
 			import hashlib
 			hash = hashlib.sha1()
@@ -504,7 +504,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 		json_data = flask.request.json
 
 		if "check" in json_data:
-			check_targets = map(lambda x: x.strip(), json_data["check"])
+			check_targets = [x.strip() for x in json_data["check"]]
 		else:
 			check_targets = None
 
@@ -553,7 +553,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 
 		checks = self._get_configured_checks()
 		if check_targets is None:
-			check_targets = checks.keys()
+			check_targets = list(checks.keys())
 
 		update_available = False
 		update_possible = False
@@ -561,7 +561,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 
 		# we don't want to do the same work twice, so let's use a lock
 		with self._get_versions_mutex:
-			for target, check in checks.items():
+			for target, check in list(checks.items()):
 				if not target in check_targets:
 					continue
 
@@ -675,7 +675,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 
 		checks = self._get_configured_checks()
 		populated_checks = dict()
-		for target, check in checks.items():
+		for target, check in list(checks.items()):
 			try:
 				populated_checks[target] = self._populated_check(target, check)
 			except exceptions.UnknownCheckType:
@@ -684,7 +684,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 				self._logger.exception("Error while populating check prior to update for target {}".format(target))
 
 		if check_targets is None:
-			check_targets = populated_checks.keys()
+			check_targets = list(populated_checks.keys())
 		to_be_updated = sorted(set(check_targets) & set(populated_checks.keys()))
 		if "octoprint" in to_be_updated:
 			to_be_updated.remove("octoprint")
@@ -695,7 +695,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 		updater_thread.daemon = False
 		updater_thread.start()
 
-		check_data = dict((key, check["displayName"] if "displayName" in check else key) for key, check in populated_checks.items() if key in to_be_updated)
+		check_data = dict((key, check["displayName"] if "displayName" in check else key) for key, check in list(populated_checks.items()) if key in to_be_updated)
 		return to_be_updated, check_data
 
 	def _update_worker(self, checks, check_targets, force):
@@ -871,7 +871,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 			result["displayVersion"] = to_unicode(check.get("displayVersion"), errors="replace")
 			if result["displayVersion"] is None:
 				# displayVersion missing or set to None
-				result["displayVersion"] = u"{octoprint_version}"
+				result["displayVersion"] = "{octoprint_version}"
 
 			stable_branch = "master"
 			release_branches = []
@@ -934,7 +934,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 			result["displayVersion"] = to_unicode(check.get("displayVersion", check.get("current")), errors="replace")
 			if result["displayVersion"] is None:
 				# displayVersion AND current missing or None
-				result["displayVersion"] = u"unknown"
+				result["displayVersion"] = "unknown"
 
 			if check["type"] in ("github_commit",):
 				result["current"] = check.get("current", None)
@@ -949,11 +949,11 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 
 	def _log(self, lines, prefix=None, stream=None, strip=True):
 		if strip:
-			lines = map(lambda x: x.strip(), lines)
+			lines = [x.strip() for x in lines]
 
 		self._send_client_message("loglines", data=dict(loglines=[dict(line=line, stream=stream) for line in lines]))
 		for line in lines:
-			self._console_logger.debug(u"{} {}".format(prefix, line))
+			self._console_logger.debug("{} {}".format(prefix, line))
 
 	def _send_client_message(self, message_type, data=None):
 		self._plugin_manager.send_plugin_message(self._identifier, dict(type=message_type, data=data))
@@ -1018,7 +1018,7 @@ class SoftwareUpdatePlugin(octoprint.plugin.BlueprintPlugin,
 		               pip=updaters.pip,
 		               python_updater=updaters.python_updater)
 
-		method = self._get_update_method(target, check, valid_methods=mapping.keys())
+		method = self._get_update_method(target, check, valid_methods=list(mapping.keys()))
 		return mapping[method]
 
 	def _get_octoprint_checkout_folder(self, checks=None):

@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -29,7 +29,7 @@ def printerState():
 	if "exclude" in request.values:
 		excludeStr = request.values["exclude"]
 		if len(excludeStr.strip()) > 0:
-			excludes = filter(lambda x: x in ["temperature", "sd", "state"], map(lambda x: x.strip(), excludeStr.split(",")))
+			excludes = [x for x in [x.strip() for x in excludeStr.split(",")] if x in ["temperature", "sd", "state"]]
 
 	result = {}
 
@@ -91,15 +91,15 @@ def printerToolCommand():
 
 		# make sure the targets are valid and the values are numbers
 		validated_values = {}
-		for tool, value in targets.items():
+		for tool, value in list(targets.items()):
 			if re.match(validation_regex, tool) is None:
 				return make_response("Invalid target for setting temperature: %s" % tool, 400)
-			if not isinstance(value, (int, long, float)):
+			if not isinstance(value, (int, float)):
 				return make_response("Not a number for %s: %r" % (tool, value), 400)
 			validated_values[tool] = value
 
 		# perform the actual temperature commands
-		for tool in validated_values.keys():
+		for tool in list(validated_values.keys()):
 			printer.set_temperature(tool, validated_values[tool])
 
 	##~~ temperature offset
@@ -108,10 +108,10 @@ def printerToolCommand():
 
 		# make sure the targets are valid, the values are numbers and in the range [-50, 50]
 		validated_values = {}
-		for tool, value in offsets.items():
+		for tool, value in list(offsets.items()):
 			if re.match(validation_regex, tool) is None:
 				return make_response("Invalid target for setting temperature: %s" % tool, 400)
-			if not isinstance(value, (int, long, float)):
+			if not isinstance(value, (int, float)):
 				return make_response("Not a number for %s: %r" % (tool, value), 400)
 			if not -50 <= value <= 50:
 				return make_response("Offset %s not in range [-50, 50]: %f" % (tool, value), 400)
@@ -127,13 +127,13 @@ def printerToolCommand():
 			return make_response("Printer is currently printing", 409)
 
 		amount = data["amount"]
-		if not isinstance(amount, (int, long, float)):
+		if not isinstance(amount, (int, float)):
 			return make_response("Not a number for extrusion amount: %r" % amount, 400)
 		printer.extrude(amount)
 
 	elif command == "flowrate":
 		factor = data["factor"]
-		if not isinstance(factor, (int, long, float)):
+		if not isinstance(factor, (int, float)):
 			return make_response("Not a number for flow rate: %r" % factor, 400)
 		try:
 			printer.flow_rate(factor)
@@ -176,7 +176,7 @@ def printerBedCommand():
 		target = data["target"]
 
 		# make sure the target is a number
-		if not isinstance(target, (int, long, float)):
+		if not isinstance(target, (int, float)):
 			return make_response("Not a number: %r" % target, 400)
 
 		# perform the actual temperature command
@@ -187,7 +187,7 @@ def printerBedCommand():
 		offset = data["offset"]
 
 		# make sure the offset is valid
-		if not isinstance(offset, (int, long, float)):
+		if not isinstance(offset, (int, float)):
 			return make_response("Not a number: %r" % offset, 400)
 		if not -50 <= offset <= 50:
 			return make_response("Offset not in range [-50, 50]: %f" % offset, 400)
@@ -240,7 +240,7 @@ def printerPrintheadCommand():
 		for axis in valid_axes:
 			if axis in data:
 				value = data[axis]
-				if not isinstance(value, (int, long, float)):
+				if not isinstance(value, (int, float)):
 					return make_response("Not a number for axis %s: %r" % (axis, value), 400)
 				validated_values[axis] = value
 
@@ -264,7 +264,7 @@ def printerPrintheadCommand():
 
 	elif command == "feedrate":
 		factor = data["factor"]
-		if not isinstance(factor, (int, long, float)):
+		if not isinstance(factor, (int, float)):
 			return make_response("Not a number for feed rate: %r" % factor, 400)
 		try:
 			printer.feed_rate(factor)
@@ -384,18 +384,18 @@ def _get_temperature_data(preprocessor):
 
 	tempData = printer.get_current_temperatures()
 
-	if "history" in request.values.keys() and request.values["history"] in valid_boolean_trues:
+	if "history" in list(request.values.keys()) and request.values["history"] in valid_boolean_trues:
 		tempHistory = printer.get_temperature_history()
 
 		limit = 300
-		if "limit" in request.values.keys() and unicode(request.values["limit"]).isnumeric():
+		if "limit" in list(request.values.keys()) and str(request.values["limit"]).isnumeric():
 			limit = int(request.values["limit"])
 
 		history = list(tempHistory)
 		limit = min(limit, len(history))
 
 		tempData.update({
-			"history": map(lambda x: preprocessor(x), history[-limit:])
+			"history": [preprocessor(x) for x in history[-limit:]]
 		})
 
 	return preprocessor(tempData)
@@ -411,7 +411,7 @@ def _delete_bed(x):
 
 def _delete_from_data(x, key_matcher):
 	data = dict(x)
-	for k in data.keys():
+	for k in list(data.keys()):
 		if key_matcher(k):
 			del data[k]
 	return data

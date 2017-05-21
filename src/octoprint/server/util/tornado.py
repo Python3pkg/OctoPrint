@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -141,7 +141,7 @@ class UploadStorageFallbackHandler(tornado.web.RequestHandler):
 		self._path = path
 
 		self._suffixes = dict((key, key) for key in ("name", "path", "content_type", "size"))
-		for suffix_type, suffix in suffixes.items():
+		for suffix_type, suffix in list(suffixes.items()):
 			if suffix_type in self._suffixes and suffix is not None:
 				self._suffixes[suffix_type] = suffix
 
@@ -396,7 +396,7 @@ class UploadStorageFallbackHandler(tornado.web.RequestHandler):
 		"""
 
 		self._new_body = b""
-		for name, part in self._parts.items():
+		for name, part in list(self._parts.items()):
 			if "filename" in part:
 				# add form fields for filename, path, size and content_type for all files contained in the request
 				if not "path" in part:
@@ -410,8 +410,8 @@ class UploadStorageFallbackHandler(tornado.web.RequestHandler):
 				if "content_type" in part:
 					parameters["content_type"] = part["content_type"]
 
-				fields = dict((self._suffixes[key], value) for (key, value) in parameters.items())
-				for n, p in fields.items():
+				fields = dict((self._suffixes[key], value) for (key, value) in list(parameters.items()))
+				for n, p in list(fields.items()):
 					key = name + "." + n
 					self._new_body += b"--%s\r\n" % self._multipart_boundary
 					self._new_body += b"Content-Disposition: form-data; name=\"%s\"\r\n" % key
@@ -502,7 +502,7 @@ def _extended_header_value(value):
 
 	if value.lower().startswith("iso-8859-1'") or value.lower().startswith("utf-8'"):
 		# RFC 5987 section 3.2
-		from urllib import unquote
+		from urllib.parse import unquote
 		encoding, _, value = value.split("'", 2)
 		return unquote(octoprint.util.to_str(value, encoding="iso-8859-1")).decode(encoding)
 
@@ -598,7 +598,7 @@ class WsgiInputContainer(object):
 
 		# determine the request_body to supply as wsgi.input
 		if body is not None:
-			if isinstance(body, (bytes, str, unicode)):
+			if isinstance(body, (bytes, str)):
 				request_body = io.BytesIO(tornado.escape.utf8(body))
 			else:
 				request_body = body
@@ -634,7 +634,7 @@ class WsgiInputContainer(object):
 			environ["CONTENT_TYPE"] = request.headers.pop("Content-Type")
 		if "Content-Length" in request.headers:
 			environ["CONTENT_LENGTH"] = request.headers.pop("Content-Length")
-		for key, value in request.headers.items():
+		for key, value in list(request.headers.items()):
 			environ["HTTP_" + key.replace("-", "_").upper()] = value
 		return environ
 
@@ -750,7 +750,7 @@ class CustomHTTP1Connection(tornado.http1connection.HTTP1Connection):
 		tornado.http1connection.HTTP1Connection.__init__(self, stream, is_client, params=params, context=context)
 
 		import re
-		self._max_body_sizes = map(lambda x: (x[0], re.compile(x[1]), x[2]), self.params.max_body_sizes or list())
+		self._max_body_sizes = [(x[0], re.compile(x[1]), x[2]) for x in self.params.max_body_sizes or list()]
 		self._default_max_body_size = self.params.default_max_body_size or self.stream.max_buffer_size
 
 	def _read_body(self, code, headers, delegate):
@@ -1001,7 +1001,7 @@ class UrlProxyHandler(tornado.web.RequestHandler):
 		if not self._basename:
 			return None
 
-		typeValue = map(str.strip, content_type.split(";"))
+		typeValue = list(map(str.strip, content_type.split(";")))
 		if len(typeValue) == 0:
 			return None
 

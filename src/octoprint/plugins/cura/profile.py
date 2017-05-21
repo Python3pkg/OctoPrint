@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -365,8 +365,8 @@ class Profile(object):
 			logger.warn("Path {path} does not exist or is not a file, cannot import".format(**locals()))
 			return None
 
-		import ConfigParser
-		config = ConfigParser.ConfigParser()
+		import configparser
+		config = configparser.ConfigParser()
 		try:
 			config.read(path)
 		except:
@@ -486,7 +486,7 @@ class Profile(object):
 	@classmethod
 	def merge_profile(cls, profile, overrides=None):
 		result = dict()
-		for key in defaults.keys():
+		for key in list(defaults.keys()):
 			r = cls.merge_profile_key(key, profile, overrides=overrides)
 			if r is not None:
 				result[key] = r
@@ -646,7 +646,7 @@ class Profile(object):
 		if value is None:
 			return default
 
-		if isinstance(value, (str, unicode, basestring)):
+		if isinstance(value, str):
 			value = value.replace(",", ".").strip()
 
 		try:
@@ -661,7 +661,7 @@ class Profile(object):
 
 		if isinstance(value, bool):
 			return value
-		elif isinstance(value, (str, unicode, basestring)):
+		elif isinstance(value, str):
 			return value.lower() == "true" or value.lower() == "yes" or value.lower() == "on" or value == "1"
 		elif isinstance(value, (int, float)):
 			return value > 0
@@ -697,8 +697,8 @@ class Profile(object):
 			profile[key] = self.get(key)
 
 		result = []
-		for k, v in profile.items():
-			if isinstance(v, (str, unicode)):
+		for k, v in list(profile.items()):
+			if isinstance(v, str):
 				result.append("{k}={v}".format(k=k, v=v.encode("utf-8")))
 			else:
 				result.append("{k}={v}".format(k=k, v=v))
@@ -750,7 +750,7 @@ class Profile(object):
 		else:
 			contents = self.get_gcode_template(key, extruder_count=extruder_count)
 
-		return unicode(prefix + re.sub("(.)\{([^\}]*)\}", self.replaceTagMatch, contents).rstrip() + '\n' + postfix).strip().encode('utf-8') + '\n'
+		return str(prefix + re.sub("(.)\{([^\}]*)\}", self.replaceTagMatch, contents).rstrip() + '\n' + postfix).strip().encode('utf-8') + '\n'
 
 	def get_start_gcode_prefix(self, contents):
 		extruder_count = self.get_int("extruder_amount")

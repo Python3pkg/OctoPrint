@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
@@ -258,7 +258,7 @@ class CuraPlugin(octoprint.plugin.SlicerPlugin,
 					if not on_progress_kwargs:
 						on_progress_kwargs = dict()
 
-				self._cura_logger.info(u"### Slicing %s to %s using profile stored at %s" % (model_path, machinecode_path, profile_path))
+				self._cura_logger.info("### Slicing %s to %s using profile stored at %s" % (model_path, machinecode_path, profile_path))
 
 				executable = normalize_path(self._settings.get(["cura_engine"]))
 				if not executable:
@@ -289,11 +289,11 @@ class CuraPlugin(octoprint.plugin.SlicerPlugin,
 				args = [executable, '-v', '-p']
 
 				# Add the settings (sorted alphabetically) to the command
-				for k, v in sorted(engine_settings.items(), key=lambda s: s[0]):
+				for k, v in sorted(list(engine_settings.items()), key=lambda s: s[0]):
 					args += ["-s", "%s=%s" % (k, str(v))]
 				args += ["-o", machinecode_path, model_path]
 
-				self._logger.info(u"Running %r in %s" % (" ".join(args), working_dir))
+				self._logger.info("Running %r in %s" % (" ".join(args), working_dir))
 
 				import sarge
 				p = sarge.run(args, cwd=working_dir, async=True, stdout=sarge.Capture(), stderr=sarge.Capture())
@@ -343,14 +343,14 @@ class CuraPlugin(octoprint.plugin.SlicerPlugin,
 						#
 						# with <step_factor> being 0 for "inset", 1 for "skin" and 2 for "export".
 
-						if line.startswith(u"Layer count:") and layer_count is None:
+						if line.startswith("Layer count:") and layer_count is None:
 							try:
-								layer_count = float(line[len(u"Layer count:"):].strip())
+								layer_count = float(line[len("Layer count:"):].strip())
 							except:
 								pass
 
-						elif line.startswith(u"Progress:"):
-							split_line = line[len(u"Progress:"):].strip().split(":")
+						elif line.startswith("Progress:"):
+							split_line = line[len("Progress:"):].strip().split(":")
 							if len(split_line) == 3:
 								step, current_layer, _ = split_line
 								try:
@@ -363,9 +363,9 @@ class CuraPlugin(octoprint.plugin.SlicerPlugin,
 									on_progress_kwargs["_progress"] = (step_factor[step] * layer_count + current_layer) / (layer_count * 3)
 									on_progress(*on_progress_args, **on_progress_kwargs)
 
-						elif line.startswith(u"Print time:"):
+						elif line.startswith("Print time:"):
 							try:
-								print_time = int(line[len(u"Print time:"):].strip())
+								print_time = int(line[len("Print time:"):].strip())
 								if analysis is None:
 									analysis = dict()
 								analysis["estimatedPrintTime"] = print_time
@@ -374,12 +374,12 @@ class CuraPlugin(octoprint.plugin.SlicerPlugin,
 
 						# Get the filament usage
 
-						elif line.startswith(u"Filament:") or line.startswith(u"Filament2:"):
-							if line.startswith(u"Filament:"):
-								filament_str = line[len(u"Filament:"):].strip()
+						elif line.startswith("Filament:") or line.startswith("Filament2:"):
+							if line.startswith("Filament:"):
+								filament_str = line[len("Filament:"):].strip()
 								tool_key = "tool0"
 							else:
-								filament_str = line[len(u"Filament2:"):].strip()
+								filament_str = line[len("Filament2:"):].strip()
 								tool_key = "tool1"
 
 							try:
@@ -405,20 +405,20 @@ class CuraPlugin(octoprint.plugin.SlicerPlugin,
 
 			with self._job_mutex:
 				if machinecode_path in self._cancelled_jobs:
-					self._cura_logger.info(u"### Cancelled")
+					self._cura_logger.info("### Cancelled")
 					raise octoprint.slicing.SlicingCancelled()
 
-			self._cura_logger.info(u"### Finished, returncode %d" % p.returncode)
+			self._cura_logger.info("### Finished, returncode %d" % p.returncode)
 			if p.returncode == 0:
 				return True, dict(analysis=analysis)
 			else:
-				self._logger.warn(u"Could not slice via Cura, got return code %r" % p.returncode)
+				self._logger.warn("Could not slice via Cura, got return code %r" % p.returncode)
 				return False, "Got returncode %r" % p.returncode
 
 		except octoprint.slicing.SlicingCancelled as e:
 			raise e
 		except:
-			self._logger.exception(u"Could not slice via Cura, got an unknown error")
+			self._logger.exception("Could not slice via Cura, got an unknown error")
 			return False, "Unknown error, please consult the log file"
 
 		finally:
@@ -437,7 +437,7 @@ class CuraPlugin(octoprint.plugin.SlicerPlugin,
 				command = self._slicing_commands[machinecode_path]
 				if command is not None:
 					command.terminate()
-				self._logger.info(u"Cancelled slicing of %s" % machinecode_path)
+				self._logger.info("Cancelled slicing of %s" % machinecode_path)
 
 	def _load_profile(self, path):
 		import yaml

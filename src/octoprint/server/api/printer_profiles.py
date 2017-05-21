@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -58,7 +58,7 @@ def printerProfilesAdd():
 		return make_response("No profile included in request", 400)
 
 	base_profile = printerProfileManager.get_default()
-	if "basedOn" in json_data and isinstance(json_data["basedOn"], basestring):
+	if "basedOn" in json_data and isinstance(json_data["basedOn"], str):
 		other_profile = printerProfileManager.get(json_data["basedOn"])
 		if other_profile is not None:
 			base_profile = other_profile
@@ -151,7 +151,7 @@ def printerProfilesUpdate(identifier):
 
 def _convert_profiles(profiles):
 	result = dict()
-	for identifier, profile in profiles.items():
+	for identifier, profile in list(profiles.items()):
 		result[identifier] = _convert_profile(profile)
 	return result
 

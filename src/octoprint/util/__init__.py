@@ -1,11 +1,11 @@
 # coding=utf-8
-from __future__ import absolute_import
+
 
 """
 This module bundles commonly used utility methods or helper classes that are used in multiple places withing
 OctoPrint's source code.
 """
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -21,10 +21,11 @@ import threading
 from functools import wraps
 import warnings
 import contextlib
+import collections
 try:
 	import queue
 except ImportError:
-	import Queue as queue
+	import queue as queue
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ def is_allowed_file(filename, extensions):
 	    boolean: True if the file name's extension matches one of the allowed extensions, False otherwise.
 	"""
 
-	return "." in filename and filename.rsplit(".", 1)[1].lower() in map(str.lower, extensions)
+	return "." in filename and filename.rsplit(".", 1)[1].lower() in list(map(str.lower, extensions))
 
 
 def get_formatted_timedelta(d):
@@ -352,10 +353,10 @@ def find_collision_free_name(filename, extension, existing_filenames, max_power=
 
 	"""
 
-	if not isinstance(filename, unicode):
-		filename = unicode(filename)
-	if not isinstance(extension, unicode):
-		extension = unicode(extension)
+	if not isinstance(filename, str):
+		filename = str(filename)
+	if not isinstance(extension, str):
+		extension = str(extension)
 
 	def make_valid(text):
 		return re.sub(r"\s+", "_", text.translate({ord(i):None for i in ".\"/\\[]:;=,"})).lower()
@@ -364,7 +365,7 @@ def find_collision_free_name(filename, extension, existing_filenames, max_power=
 	extension = make_valid(extension)
 	extension = extension[:3] if len(extension) > 3 else extension
 
-	full_name_format = u"{filename}.{extension}" if extension else u"{filename}"
+	full_name_format = "{filename}.{extension}" if extension else "{filename}"
 
 	result = full_name_format.format(filename=filename,
 	                                 extension=extension)
@@ -374,7 +375,7 @@ def find_collision_free_name(filename, extension, existing_filenames, max_power=
 
 	counter = 1
 	power = 1
-	prefix_format = u"{segment}~{counter}"
+	prefix_format = "{segment}~{counter}"
 	while counter < (10 ** max_power):
 		prefix = prefix_format.format(segment=filename[:(6 - power + 1)], counter=str(counter))
 		result = full_name_format.format(filename=prefix,
@@ -403,7 +404,7 @@ def silent_remove(file):
 
 
 def sanitize_ascii(line):
-	if not isinstance(line, basestring):
+	if not isinstance(line, str):
 		raise ValueError("Expected either str or unicode but got {} instead".format(line.__class__.__name__ if line is not None else None))
 	return to_unicode(line, encoding="ascii", errors="replace").rstrip()
 
@@ -428,7 +429,7 @@ def filter_non_ascii(line):
 
 def to_str(s_or_u, encoding="utf-8", errors="strict"):
 	"""Make sure ``s_or_u`` is a str."""
-	if isinstance(s_or_u, unicode):
+	if isinstance(s_or_u, str):
 		return s_or_u.encode(encoding, errors=errors)
 	else:
 		return s_or_u
@@ -495,7 +496,7 @@ def dict_merge(a, b):
 	if not isinstance(b, dict):
 		return b
 	result = deepcopy(a)
-	for k, v in b.items():
+	for k, v in list(b.items()):
 		if k in result and isinstance(result[k], dict):
 			result[k] = dict_merge(result[k], v)
 		else:
@@ -531,7 +532,7 @@ def dict_sanitize(a, b):
 		return a
 
 	result = deepcopy(a)
-	for k, v in a.items():
+	for k, v in list(a.items()):
 		if not k in b:
 			del result[k]
 		elif isinstance(v, dict):
@@ -576,7 +577,7 @@ def dict_minimal_mergediff(source, target):
 
 	from copy import deepcopy
 
-	all_keys = set(source.keys() + target.keys())
+	all_keys = set(list(source.keys()) + list(target.keys()))
 	result = dict()
 	for k in all_keys:
 		if k not in target:
@@ -629,7 +630,7 @@ def dict_contains_keys(keys, dictionary):
 	if not isinstance(keys, dict) or not isinstance(dictionary, dict):
 		return False
 
-	for k, v in keys.items():
+	for k, v in list(keys.items()):
 		if not k in dictionary:
 			return False
 		elif isinstance(v, dict):
@@ -661,7 +662,7 @@ class fallback_dict(dict):
 	def keys(self):
 		result = set()
 		for dictionary in self._all():
-			result += dictionary.keys()
+			result += list(dictionary.keys())
 		return result
 
 	def _all(self):
@@ -706,8 +707,8 @@ def dict_filter(dictionary, filter_function):
 	        for which the ``filter_function`` returned ``False``
 	"""
 	assert isinstance(dictionary, dict)
-	assert callable(filter_function)
-	return dict((k, v) for k, v in dictionary.items() if filter_function(k, v))
+	assert isinstance(filter_function, collections.Callable)
+	return dict((k, v) for k, v in list(dictionary.items()) if filter_function(k, v))
 
 
 class Object(object):
@@ -828,7 +829,7 @@ def is_hidden_path(path):
 		# attribute via the windows api
 		try:
 			import ctypes
-			attrs = ctypes.windll.kernel32.GetFileAttributesW(unicode(path))
+			attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))
 			assert attrs != -1     # INVALID_FILE_ATTRIBUTES == -1
 			return bool(attrs & 2) # FILE_ATTRIBUTE_HIDDEN == 2
 		except (AttributeError, AssertionError):
@@ -916,7 +917,7 @@ class RepeatedTimer(threading.Thread):
 		if condition is None:
 			condition = lambda: True
 
-		if not callable(interval):
+		if not isinstance(interval, collections.Callable):
 			self.interval = lambda: interval
 		else:
 			self.interval = interval
@@ -963,11 +964,11 @@ class RepeatedTimer(threading.Thread):
 		self.finished.set()
 
 		for callback in callbacks:
-			if not callable(callback):
+			if not isinstance(callback, collections.Callable):
 				continue
 			callback()
 
-		if callable(self.on_finish):
+		if isinstance(self.on_finish, collections.Callable):
 			self.on_finish()
 
 

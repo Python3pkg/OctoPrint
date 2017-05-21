@@ -2,7 +2,7 @@
 """
 This module provides a bunch of utility methods and helpers FOR DEVELOPMENT ONLY.
 """
-from __future__ import absolute_import, division, print_function
+
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 
 import contextlib
@@ -53,8 +53,8 @@ def log_duration(log=None, with_args=False):
 	def decorator(f):
 		def wrapped(*args, **kwargs):
 			if with_args:
-				args_str = ", ".join(map(lambda x: repr(x), args))
-				kwargs_str = ", ".join(map(lambda item: "{}={}".format(item[0], repr(item[1])), kwargs.items()))
+				args_str = ", ".join([repr(x) for x in args])
+				kwargs_str = ", ".join(["{}={}".format(item[0], repr(item[1])) for item in list(kwargs.items())])
 				sep = ", " if args_str and kwargs_str else ""
 				arguments = "".join([args_str, sep, kwargs_str])
 			else:

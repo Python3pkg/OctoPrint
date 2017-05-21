@@ -93,7 +93,7 @@ def data_copy_build_py_factory(files, baseclass):
 		def run(self):
 			import shutil
 			if not self.dry_run:
-				for directory, files in self.__class__.files.items():
+				for directory, files in list(self.__class__.files.items()):
 					target_dir = os.path.join(self.build_lib, directory)
 					self.mkpath(target_dir)
 

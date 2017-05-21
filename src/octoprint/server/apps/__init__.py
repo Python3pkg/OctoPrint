@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -87,12 +87,12 @@ def _get_registered_apps():
 		return __registered_apps
 
 	apps = s().get(["api", "apps"], merged=True)
-	for app, app_data in apps.items():
+	for app, app_data in list(apps.items()):
 		if not "enabled" in app_data:
 			apps[app]["enabled"] = True
 
 	hooks = octoprint.server.pluginManager.get_hooks("octoprint.accesscontrol.appkey")
-	for name, hook in hooks.items():
+	for name, hook in list(hooks.items()):
 		try:
 			additional_apps = hook()
 		except:
@@ -119,7 +119,7 @@ def _get_registered_apps():
 				enabled=True
 			)
 
-		for id, enabled in any_version_enabled.items():
+		for id, enabled in list(any_version_enabled.items()):
 			if enabled:
 				continue
 			apps[id + ":any"] = dict(

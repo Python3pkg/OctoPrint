@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -160,7 +160,7 @@ def get_api_key(request):
 		return request.arguments["apikey"]
 
 	# Check Tornado and Flask headers
-	if "X-Api-Key" in request.headers.keys():
+	if "X-Api-Key" in list(request.headers.keys()):
 		return request.headers.get("X-Api-Key")
 
 	return None
@@ -170,8 +170,8 @@ def get_plugin_hash():
 	from octoprint.plugin import plugin_manager
 
 	plugin_signature = lambda impl: "{}:{}".format(impl._identifier, impl._plugin_version)
-	template_plugins = map(plugin_signature, plugin_manager().get_implementations(octoprint.plugin.TemplatePlugin))
-	asset_plugins = map(plugin_signature, plugin_manager().get_implementations(octoprint.plugin.AssetPlugin))
+	template_plugins = list(map(plugin_signature, plugin_manager().get_implementations(octoprint.plugin.TemplatePlugin)))
+	asset_plugins = list(map(plugin_signature, plugin_manager().get_implementations(octoprint.plugin.AssetPlugin)))
 	ui_plugins = sorted(set(template_plugins + asset_plugins))
 
 	import hashlib

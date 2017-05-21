@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 
@@ -12,7 +12,7 @@ import math
 try:
 	import queue
 except ImportError:
-	import Queue as queue
+	import queue as queue
 
 from serial import SerialTimeoutException
 
@@ -627,15 +627,9 @@ class VirtualPrinter(object):
 	def _listSd(self):
 		self._send("Begin file list")
 		if settings().getBoolean(["devel", "virtualPrinter", "extendedSdFileList"]):
-			items = map(
-				lambda x: "%s %d" % (x.upper(), os.stat(os.path.join(self._virtualSd, x)).st_size),
-				os.listdir(self._virtualSd)
-			)
+			items = ["%s %d" % (x.upper(), os.stat(os.path.join(self._virtualSd, x)).st_size) for x in os.listdir(self._virtualSd)]
 		else:
-			items = map(
-				lambda x: x.upper(),
-				os.listdir(self._virtualSd)
-			)
+			items = [x.upper() for x in os.listdir(self._virtualSd)]
 		for item in items:
 			self._send(item)
 		self._send("End file list")
@@ -683,7 +677,7 @@ class VirtualPrinter(object):
 			allTemps = []
 			for i in range(len(self.temp)):
 				allTemps.append((i, self.temp[i], self.targetTemp[i]))
-			allTempsString = " ".join(map(lambda x: "T%d:%.2f /%.2f" % x if includeTarget else "T%d:%.2f" % (x[0], x[1]), allTemps))
+			allTempsString = " ".join(["T%d:%.2f /%.2f" % x if includeTarget else "T%d:%.2f" % (x[0], x[1]) for x in allTemps])
 
 			if settings().getBoolean(["devel", "virtualPrinter", "smoothieTemperatureReporting"]):
 				allTempsString = allTempsString.replace("T0:", "T:")

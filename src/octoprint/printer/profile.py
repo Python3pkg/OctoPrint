@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -291,7 +291,7 @@ class PrinterProfileManager(object):
 		return self._load_default()
 
 	def set_default(self, identifier):
-		all_identifiers = self._load_all_identifiers().keys()
+		all_identifiers = list(self._load_all_identifiers().keys())
 		if identifier is not None and not identifier in all_identifiers:
 			return
 
@@ -319,7 +319,7 @@ class PrinterProfileManager(object):
 	def _load_all(self):
 		all_identifiers = self._load_all_identifiers()
 		results = dict()
-		for identifier, path in all_identifiers.items():
+		for identifier, path in list(all_identifiers.items()):
 			try:
 				if identifier == "_default":
 					profile = self._load_default()
@@ -448,7 +448,7 @@ class PrinterProfileManager(object):
 	def _ensure_valid_profile(self, profile):
 		# ensure all keys are present
 		if not dict_contains_keys(self.default, profile):
-			self._logger.warn("Profile invalid, missing keys. Expected: {expected!r}. Actual: {actual!r}".format(expected=self.default.keys(), actual=profile.keys()))
+			self._logger.warn("Profile invalid, missing keys. Expected: {expected!r}. Actual: {actual!r}".format(expected=list(self.default.keys()), actual=list(profile.keys())))
 			return False
 
 		# conversion helper
@@ -489,12 +489,12 @@ class PrinterProfileManager(object):
 				return False
 
 		# validate form factor
-		if not profile["volume"]["formFactor"] in BedTypes.values():
+		if not profile["volume"]["formFactor"] in list(BedTypes.values()):
 			self._logger.warn("Profile has invalid value volume.formFactor: {formFactor}".format(formFactor=profile["volume"]["formFactor"]))
 			return False
 
 		# validate origin type
-		if not profile["volume"]["origin"] in BedOrigin.values():
+		if not profile["volume"]["origin"] in list(BedOrigin.values()):
 			self._logger.warn("Profile has invalid value in volume.origin: {origin}".format(origin=profile["volume"]["origin"]))
 			return False
 

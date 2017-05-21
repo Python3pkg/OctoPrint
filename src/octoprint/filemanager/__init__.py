@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -19,6 +19,7 @@ from .storage import LocalFileStorage
 from .util import AbstractFileWrapper, StreamWrapper, DiskFileWrapper
 
 from collections import namedtuple
+import collections
 
 ContentTypeMapping = namedtuple("ContentTypeMapping", "extensions, content_type")
 ContentTypeDetector = namedtuple("ContentTypeDetector", "extensions, detector")
@@ -39,7 +40,7 @@ def full_extension_tree():
 	)
 
 	extension_tree_hooks = octoprint.plugin.plugin_manager().get_hooks("octoprint.filemanager.extension_tree")
-	for name, hook in extension_tree_hooks.items():
+	for name, hook in list(extension_tree_hooks.items()):
 		try:
 			hook_result = hook()
 			if hook_result is None or not isinstance(hook_result, dict):
@@ -54,7 +55,7 @@ def get_extensions(type, subtree=None):
 	if not subtree:
 		subtree = full_extension_tree()
 
-	for key, value in subtree.items():
+	for key, value in list(subtree.items()):
 		if key == type:
 			return get_all_extensions(subtree=value)
 		elif isinstance(value, dict):
@@ -70,7 +71,7 @@ def get_all_extensions(subtree=None):
 
 	result = []
 	if isinstance(subtree, dict):
-		for key, value in subtree.items():
+		for key, value in list(subtree.items()):
 			if isinstance(value, dict):
 				result += get_all_extensions(value)
 			elif isinstance(value, (ContentTypeMapping, ContentTypeDetector)):
@@ -87,7 +88,7 @@ def get_path_for_extension(extension, subtree=None):
 	if not subtree:
 		subtree = full_extension_tree()
 
-	for key, value in subtree.items():
+	for key, value in list(subtree.items()):
 		if isinstance(value, (ContentTypeMapping, ContentTypeDetector)) and extension in value.extensions:
 			return [key]
 		elif isinstance(value, (list, tuple)) and extension in value:
@@ -103,7 +104,7 @@ def get_content_type_mapping_for_extension(extension, subtree=None):
 	if not subtree:
 		subtree = full_extension_tree()
 
-	for key, value in subtree.items():
+	for key, value in list(subtree.items()):
 		content_extension_matches = isinstance(value, (ContentTypeMapping, ContentTypeDetector)) and extension in value. extensions
 		list_extension_matches = isinstance(value, (list, tuple)) and extension in value
 
@@ -141,7 +142,7 @@ def get_mime_type(filename):
 	if mapping:
 		if isinstance(mapping, ContentTypeMapping) and mapping.content_type is not None:
 			return mapping.content_type
-		elif isinstance(mapping, ContentTypeDetector) and callable(mapping.detector):
+		elif isinstance(mapping, ContentTypeDetector) and isinstance(mapping.detector, collections.Callable):
 			result = mapping.detector(filename)
 			if result is not None:
 				return result
@@ -183,7 +184,7 @@ class FileManager(object):
 
 		def worker():
 			self._logger.info("Adding backlog items from all storage types to analysis queue...".format(**locals()))
-			for storage_type, storage_manager in self._storage_managers.items():
+			for storage_type, storage_manager in list(self._storage_managers.items()):
 				self._determine_analysis_backlog(storage_type, storage_manager)
 
 		import threading
@@ -276,7 +277,7 @@ class FileManager(object):
 					links = [("model", dict(name=source_path))]
 					_, stl_name = self.split_path(source_location, source_path)
 					file_obj = StreamWrapper(os.path.basename(dest_path),
-					                         io.BytesIO(u";Generated from {stl_name} {hash}\n".format(**locals()).encode("ascii", "replace")),
+					                         io.BytesIO(";Generated from {stl_name} {hash}\n".format(**locals()).encode("ascii", "replace")),
 					                         io.FileIO(tmp_path, "rb"))
 
 					printer_profile = self._printer_profile_manager.get(printer_profile_id)
@@ -370,7 +371,7 @@ class FileManager(object):
 
 
 	def get_busy_files(self):
-		return self._slicing_jobs.keys()
+		return list(self._slicing_jobs.keys())
 
 	def file_in_path(self, destination, path, file):
 		return self._storage(destination).file_in_path(path, file)
@@ -383,8 +384,8 @@ class FileManager(object):
 
 	def list_files(self, destinations=None, path=None, filter=None, recursive=None):
 		if not destinations:
-			destinations = self._storage_managers.keys()
-		if isinstance(destinations, (str, unicode, basestring)):
+			destinations = list(self._storage_managers.keys())
+		if isinstance(destinations, str):
 			destinations = [destinations]
 
 		result = dict()
@@ -396,7 +397,7 @@ class FileManager(object):
 		if printer_profile is None:
 			printer_profile = self._printer_profile_manager.get_current_or_default()
 
-		for hook in self._preprocessor_hooks.values():
+		for hook in list(self._preprocessor_hooks.values()):
 			try:
 				hook_file_object = hook(path, file_object, links=links, printer_profile=printer_profile, allow_overwrite=allow_overwrite)
 			except:

@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>, Lars Norpchen"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -11,7 +11,7 @@ import subprocess
 try:
 	import queue
 except ImportError:
-	import Queue as queue
+	import queue as queue
 import threading
 import collections
 
@@ -245,7 +245,7 @@ class DebugEventListener(GenericEventListener):
 	def __init__(self):
 		GenericEventListener.__init__(self)
 
-		events = filter(lambda x: not x.startswith("__"), dir(Events))
+		events = [x for x in dir(Events) if not x.startswith("__")]
 		self.subscribe(events)
 
 	def eventCallback(self, event, payload):
@@ -279,12 +279,12 @@ class CommandTrigger(GenericEventListener):
 				self._logger.info("Invalid subscription definition, not a dictionary: {!r}".format(subscription))
 				continue
 
-			if not "event" in subscription.keys() or not "command" in subscription.keys() \
-					or not "type" in subscription.keys() or not subscription["type"] in ["system", "gcode"]:
+			if not "event" in list(subscription.keys()) or not "command" in list(subscription.keys()) \
+					or not "type" in list(subscription.keys()) or not subscription["type"] in ["system", "gcode"]:
 				self._logger.info("Invalid command trigger, missing either event, type or command or type is invalid: {!r}".format(subscription))
 				continue
 
-			if "enabled" in subscription.keys() and not subscription["enabled"]:
+			if "enabled" in list(subscription.keys()) and not subscription["enabled"]:
 				self._logger.info("Disabled command trigger: {!r}".format(subscription))
 				continue
 
@@ -293,7 +293,7 @@ class CommandTrigger(GenericEventListener):
 			commandType = subscription["type"]
 			debug = subscription["debug"] if "debug" in subscription else False
 
-			if not event in self._subscriptions.keys():
+			if not event in list(self._subscriptions.keys()):
 				self._subscriptions[event] = []
 			self._subscriptions[event].append((command, commandType, debug))
 

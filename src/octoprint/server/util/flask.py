@@ -1,6 +1,7 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 from flask import make_response
+import collections
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -60,7 +61,7 @@ def enable_additional_translations(default_locale="en", additional_folders=None)
 				locale_dir = os.path.join(entry.path, 'LC_MESSAGES')
 				if not os.path.isdir(locale_dir):
 					continue
-				if filter(lambda x: x.name.endswith('.mo'), scandir(locale_dir)):
+				if [x for x in scandir(locale_dir) if x.name.endswith('.mo')]:
 					result.append(Locale.parse(entry.name))
 			return result
 
@@ -68,7 +69,7 @@ def enable_additional_translations(default_locale="en", additional_folders=None)
 
 		# translations from plugins
 		plugins = octoprint.plugin.plugin_manager().enabled_plugins
-		for name, plugin in plugins.items():
+		for name, plugin in list(plugins.items()):
 			plugin_translation_dir = os.path.join(plugin.location, 'translations')
 			if not os.path.isdir(plugin_translation_dir):
 				continue
@@ -97,8 +98,8 @@ def enable_additional_translations(default_locale="en", additional_folders=None)
 			if str(locale) != default_locale:
 				# plugin translations
 				plugins = octoprint.plugin.plugin_manager().enabled_plugins
-				for name, plugin in plugins.items():
-					dirs = map(lambda x: os.path.join(x, "_plugins", name), additional_folders) + [os.path.join(plugin.location, 'translations')]
+				for name, plugin in list(plugins.items()):
+					dirs = [os.path.join(x, "_plugins", name) for x in additional_folders] + [os.path.join(plugin.location, 'translations')]
 					for dirname in dirs:
 						if not os.path.isdir(dirname):
 							continue
@@ -225,7 +226,7 @@ def fix_webassets_filtertool():
 			return MemoryHunk(content)
 		except:
 			error_logger.exception("Got an exception while trying to apply filter, ignoring file")
-			return MemoryHunk(u"")
+			return MemoryHunk("")
 
 	FilterTool._wrap_cache = fixed_wrap_cache
 
@@ -240,7 +241,7 @@ class ReverseProxiedEnvironment(object):
 		if not isinstance(values, (list, tuple)):
 			values = [values]
 		to_wsgi_format = lambda header: "HTTP_" + header.upper().replace("-", "_")
-		return map(to_wsgi_format, values)
+		return list(map(to_wsgi_format, values))
 
 	@staticmethod
 	def valid_ip(address):
@@ -359,7 +360,7 @@ class ReverseProxiedEnvironment(object):
 			# Scheme might be something like "https,https" if doubly-reverse-proxied
 			# without stripping original scheme header first, make sure to only use
 			# the first entry in such a case. See #1391.
-			scheme, _ = map(lambda x: x.strip(), scheme.split(",", 1))
+			scheme, _ = [x.strip() for x in scheme.split(",", 1)]
 		if scheme is not None:
 			environ["wsgi.url_scheme"] = scheme
 
@@ -427,7 +428,7 @@ class OctoPrintFlaskRequest(flask.Request):
 
 		result = dict()
 		desuffixed = dict()
-		for key, value in cookies.items():
+		for key, value in list(cookies.items()):
 			if key.endswith(self.cookie_suffix):
 				desuffixed[key[:-len(self.cookie_suffix)]] = value
 			else:
@@ -535,7 +536,7 @@ class LessSimpleCache(BaseCache):
 	def _prune(self):
 		if self.over_threshold():
 			now = time.time()
-			for idx, (key, (expires, _)) in enumerate(self._cache.items()):
+			for idx, (key, (expires, _)) in enumerate(list(self._cache.items())):
 				if expires is not None and expires <= now or idx % 3 == 0:
 					with self._mutex:
 						self._cache.pop(key, None)
@@ -623,7 +624,7 @@ def cached(timeout=5 * 60, key=lambda: "view:%s" % flask.request.path, unless=No
 						                                                             key=cache_key))
 
 			# bypass the cache if "unless" condition is true
-			if callable(unless) and unless():
+			if isinstance(unless, collections.Callable) and unless():
 				logger.debug("Cache for {path} bypassed, calling wrapped function".format(path=flask.request.path))
 				_cache.set_bypassed(cache_key)
 				return f_with_duration(*args, **kwargs)
@@ -637,7 +638,7 @@ def cached(timeout=5 * 60, key=lambda: "view:%s" % flask.request.path, unless=No
 			rv = _cache.get(cache_key)
 
 			# only take the value from the cache if we are not required to refresh it from the wrapped function
-			if rv is not None and (not callable(refreshif) or not refreshif(rv)):
+			if rv is not None and (not isinstance(refreshif, collections.Callable) or not refreshif(rv)):
 				logger.debug("Serving entry for {path} from cache (key: {key})".format(path=flask.request.path, key=cache_key))
 				if not "X-From-Cache" in rv.headers:
 					rv.headers["X-From-Cache"] = "true"
@@ -648,7 +649,7 @@ def cached(timeout=5 * 60, key=lambda: "view:%s" % flask.request.path, unless=No
 			rv = f_with_duration(*args, **kwargs)
 
 			# do not store if the "unless_response" condition is true
-			if callable(unless_response) and unless_response(rv):
+			if isinstance(unless_response, collections.Callable) and unless_response(rv):
 				logger.debug("Not caching result for {path} (key: {key}), bypassed".format(path=flask.request.path, key=cache_key))
 				_cache.set_bypassed(cache_key)
 				return rv
@@ -663,12 +664,12 @@ def cached(timeout=5 * 60, key=lambda: "view:%s" % flask.request.path, unless=No
 	return decorator
 
 def is_in_cache(key=lambda: "view:%s" % flask.request.path):
-	if callable(key):
+	if isinstance(key, collections.Callable):
 		key = key()
 	return key in _cache
 
 def is_cache_bypassed(key=lambda: "view:%s" % flask.request.path):
-	if callable(key):
+	if isinstance(key, collections.Callable):
 		key = key()
 	return _cache.is_bypassed(key)
 
@@ -696,7 +697,7 @@ def cache_check_status_code(response, valid):
 	if not isinstance(response, flask.Response):
 		return False
 
-	if callable(valid):
+	if isinstance(valid, collections.Callable):
 		return not valid(response.status_code)
 	else:
 		return response.status_code not in valid
@@ -712,11 +713,11 @@ class PreemptiveCache(object):
 		self._lock = threading.RLock()
 
 	def record(self, data, unless=None, root=None):
-		if callable(unless) and unless():
+		if isinstance(unless, collections.Callable) and unless():
 			return
 
 		entry_data = data
-		if callable(entry_data):
+		if isinstance(entry_data, collections.Callable):
 			entry_data = entry_data()
 
 		if entry_data is not None:
@@ -726,7 +727,7 @@ class PreemptiveCache(object):
 			self.add_data(root, entry_data)
 
 	def has_record(self, data, root=None):
-		if callable(data):
+		if isinstance(data, collections.Callable):
 			data = data()
 
 		if data is None:
@@ -744,11 +745,11 @@ class PreemptiveCache(object):
 		return False
 
 	def clean_all_data(self, cleanup_function):
-		assert callable(cleanup_function)
+		assert isinstance(cleanup_function, collections.Callable)
 
 		with self._lock:
 			all_data = self.get_all_data()
-			for root, entries in all_data.items():
+			for root, entries in list(all_data.items()):
 				old_count = len(entries)
 				entries = cleanup_function(root, entries)
 				if not entries:
@@ -870,7 +871,7 @@ def etagged(etag):
 			rv = f(*args, **kwargs)
 			if isinstance(rv, flask.Response):
 				result = etag
-				if callable(result):
+				if isinstance(result, collections.Callable):
 					result = result(rv)
 				if result:
 					rv.set_etag(result)
@@ -886,10 +887,10 @@ def lastmodified(date):
 			rv = f(*args, **kwargs)
 			if not "Last-Modified" in rv.headers:
 				result = date
-				if callable(result):
+				if isinstance(result, collections.Callable):
 					result = result(rv)
 
-				if not isinstance(result, basestring):
+				if not isinstance(result, str):
 					from werkzeug.http import http_date
 					result = http_date(result)
 
@@ -904,10 +905,10 @@ def conditional(condition, met):
 	def decorator(f):
 		@functools.wraps(f)
 		def decorated_function(*args, **kwargs):
-			if callable(condition) and condition():
+			if isinstance(condition, collections.Callable) and condition():
 				# condition has been met, return met-response
 				rv = met
-				if callable(met):
+				if isinstance(met, collections.Callable):
 					rv = met()
 				return rv
 
@@ -961,7 +962,7 @@ def with_revalidation_checking(etag_factory=None,
 
 			# set last modified header if not already set
 			if lm and response.headers.get("Last-Modified", None) is None:
-				if not isinstance(lm, basestring):
+				if not isinstance(lm, str):
 					from werkzeug.http import http_date
 					lm = http_date(lm)
 				response.headers["Last-Modified"] = lm
@@ -986,7 +987,7 @@ def check_lastmodified(lastmodified):
 		return False
 
 	from datetime import datetime
-	if isinstance(lastmodified, (int, long, float, complex)):
+	if isinstance(lastmodified, (int, float, complex)):
 		lastmodified = datetime.fromtimestamp(lastmodified).replace(microsecond=0)
 
 	if not isinstance(lastmodified, datetime):
@@ -1163,7 +1164,7 @@ class AppSessionManager(object):
 
 		with self._mutex:
 			self._oldest = None
-			for key, value in self._sessions.items():
+			for key, value in list(self._sessions.items()):
 				created, verified, valid_until = value
 				if not verified:
 					valid_until = created + self.__class__.VALIDITY_UNVERIFIED
@@ -1189,7 +1190,7 @@ def get_json_command_from_request(request, valid_commands):
 		return None, None, make_response("Expected content-type JSON", 400)
 
 	data = request.json
-	if not "command" in data.keys() or not data["command"] in valid_commands.keys():
+	if not "command" in list(data.keys()) or not data["command"] in list(valid_commands.keys()):
 		return None, None, make_response("Expected valid command", 400)
 
 	command = data["command"]

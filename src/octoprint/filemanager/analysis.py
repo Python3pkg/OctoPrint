@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -10,7 +10,7 @@ import logging
 try:
 	import queue
 except ImportError:
-	import Queue as queue
+	import queue as queue
 import os
 import threading
 import collections
@@ -91,15 +91,15 @@ class AnalysisQueue(object):
 		self._queues[entry.type].dequeue(entry.location, entry.path)
 
 	def dequeue_folder(self, destination, path):
-		for queue in self._queues.values():
+		for queue in list(self._queues.values()):
 			queue.dequeue_folder(destination, path)
 
 	def pause(self):
-		for queue in self._queues.values():
+		for queue in list(self._queues.values()):
 			queue.pause()
 
 	def resume(self):
-		for queue in self._queues.values():
+		for queue in list(self._queues.values()):
 			queue.resume()
 
 	def _analysis_finished(self, entry, result):

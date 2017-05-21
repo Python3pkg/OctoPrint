@@ -12,7 +12,7 @@ In this module the slicing support of OctoPrint is encapsulated.
    :members:
 """
 
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -157,7 +157,7 @@ class SlicingManager(object):
 		Returns:
 		    list of str: Identifiers of all available slicers.
 		"""
-		return self._slicers.keys()
+		return list(self._slicers.keys())
 
 	@property
 	def configured_slicers(self):
@@ -165,7 +165,7 @@ class SlicingManager(object):
 		Returns:
 		    list of str: Identifiers of all available configured slicers.
 		"""
-		return map(lambda slicer: slicer.get_slicer_properties()["type"], filter(lambda slicer: slicer.is_slicer_configured(), self._slicers.values()))
+		return [slicer.get_slicer_properties()["type"] for slicer in [slicer for slicer in list(self._slicers.values()) if slicer.is_slicer_configured()]]
 
 	@property
 	def default_slicer(self):

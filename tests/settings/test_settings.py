@@ -439,11 +439,11 @@ class TestSettings(unittest.TestCase):
 			hash = hashlib.md5()
 			hash.update(yaml.safe_dump(self.expected_effective))
 			expected_effective_hash = hash.hexdigest()
-			print(yaml.safe_dump(self.expected_effective))
+			print((yaml.safe_dump(self.expected_effective)))
 
 			settings = octoprint.settings.Settings()
 			effective_hash = settings.effective_hash
-			print(yaml.safe_dump(settings.effective))
+			print((yaml.safe_dump(settings.effective)))
 
 			self.assertEqual(expected_effective_hash, effective_hash)
 

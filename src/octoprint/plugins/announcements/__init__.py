@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -109,10 +109,10 @@ class AnnouncementPlugin(octoprint.plugin.AssetPlugin,
 		def view():
 			channel_data = self._fetch_all_channels(force=force)
 
-			for key, data in channel_configs.items():
+			for key, data in list(channel_configs.items()):
 				read_until = channel_configs[key].get("read_until", None)
 				entries = sorted(self._to_internal_feed(channel_data.get(key, []), read_until=read_until), key=lambda e: e["published"], reverse=True)
-				unread = len(filter(lambda e: not e["read"], entries))
+				unread = len([e for e in entries if not e["read"]])
 
 				if read_until is None and entries:
 					last = entries[0]["published"]
@@ -209,7 +209,7 @@ class AnnouncementPlugin(octoprint.plugin.AssetPlugin,
 			if self._cached_channel_configs is None or force:
 				configs = self._settings.get(["channels"], merged=True)
 				result = dict()
-				for key, config in configs.items():
+				for key, config in list(configs.items()):
 					if "url" not in config or "name" not in config:
 						# strip invalid entries
 						continue
@@ -231,7 +231,7 @@ class AnnouncementPlugin(octoprint.plugin.AssetPlugin,
 		forced = self._settings.get(["forced_channels"])
 
 		all_channels = dict()
-		for key, config in channels.items():
+		for key, config in list(channels.items()):
 			if not key in enabled and not key in forced:
 				continue
 
@@ -274,7 +274,7 @@ class AnnouncementPlugin(octoprint.plugin.AssetPlugin,
 			now = time.time()
 			if os.stat(channel_path).st_mtime + ttl > now:
 				d = feedparser.parse(channel_path)
-				self._logger.debug(u"Loaded channel {} from cache at {}".format(key, channel_path))
+				self._logger.debug("Loaded channel {} from cache at {}".format(key, channel_path))
 				return d
 
 		return None
@@ -288,10 +288,10 @@ class AnnouncementPlugin(octoprint.plugin.AssetPlugin,
 		try:
 			start = time.time()
 			r = requests.get(url)
-			self._logger.info(u"Loaded channel {} from {} in {:.2}s".format(key, config["url"], time.time() - start))
+			self._logger.info("Loaded channel {} from {} in {:.2}s".format(key, config["url"], time.time() - start))
 		except Exception as e:
 			self._logger.exception(
-				u"Could not fetch channel {} from {}: {}".format(key, config["url"], str(e)))
+				"Could not fetch channel {} from {}: {}".format(key, config["url"], str(e)))
 			return None
 
 		response = r.text
@@ -348,7 +348,7 @@ def _strip_tags(text):
 	u'&#62; &#x3E; Foo'
 	"""
 
-	from HTMLParser import HTMLParser
+	from html.parser import HTMLParser
 
 	class TagStripper(HTMLParser):
 

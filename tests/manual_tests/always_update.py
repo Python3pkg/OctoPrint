@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import print_function
+
 
 """
 Place in ~/.octoprint/plugins & restart server to test:
@@ -14,6 +14,7 @@ consecutive runs are not a problem.
 """
 
 import time
+import collections
 
 NAME = "Always Update"
 OLD_VERSION = "1.0.0"
@@ -31,7 +32,7 @@ class Foo(object):
 		return True
 
 	def perform_update(self, target, check, target_version, log_cb=None):
-		if not callable(log_cb):
+		if not isinstance(log_cb, collections.Callable):
 			import sys
 			def log_cb(lines, prefix=None, stream=None, strip=True):
 				if stream == "stdout":

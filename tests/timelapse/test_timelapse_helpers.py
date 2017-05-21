@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import
+
 
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 __copyright__ = "Copyright (C) 2016 The OctoPrint Project - Released under terms of the AGPLv3 License"
@@ -47,15 +47,15 @@ class TimelapseTest(unittest.TestCase):
 		                                                    "tmp_00001.jpg"])
 
 		self.settings.getBaseFolder.return_value = mocked_path
-		mock_scandir.return_value = mocked_files.values()
+		mock_scandir.return_value = list(mocked_files.values())
 
 		## test
 		octoprint.timelapse.delete_unrendered_timelapse("b")
 
 		## verify
-		expected_deletions = map(lambda x: os.path.join(mocked_path, x), ["b-0.jpg",
-		                                                                  "b-1.jpg"])
-		expected_deletion_calls = map(mock.call, expected_deletions)
+		expected_deletions = [os.path.join(mocked_path, x) for x in ["b-0.jpg",
+		                                                                  "b-1.jpg"]]
+		expected_deletion_calls = list(map(mock.call, expected_deletions))
 		self.assertListEqual(mock_remove.mock_calls, expected_deletion_calls)
 
 	@mock.patch("time.time")
@@ -84,18 +84,18 @@ class TimelapseTest(unittest.TestCase):
 
 		mock_time.return_value = now
 
-		mock_scandir.return_value = self._generate_scandir(mocked_path, files).values()
+		mock_scandir.return_value = list(self._generate_scandir(mocked_path, files).values())
 
 		## test
 		octoprint.timelapse.delete_old_unrendered_timelapses()
 
 		## verify
-		expected_deletions = map(lambda x: os.path.join(mocked_path, x), ["tmp_00000.jpg",
+		expected_deletions = [os.path.join(mocked_path, x) for x in ["tmp_00000.jpg",
 		                                                                  "tmp_00001.jpg",
 		                                                                  "old-0.jpg",
 		                                                                  "old-1.jpg",
-		                                                                  "old-2.jpg"])
-		expected_deletion_calls = map(mock.call, expected_deletions)
+		                                                                  "old-2.jpg"]]
+		expected_deletion_calls = list(map(mock.call, expected_deletions))
 		self.assertListEqual(mock_remove.mock_calls, expected_deletion_calls)
 
 	@mock.patch("octoprint.timelapse.scandir")
@@ -112,7 +112,7 @@ class TimelapseTest(unittest.TestCase):
 
 		self.settings.getBaseFolder.return_value = mocked_path
 
-		mock_listdir.return_value = self._generate_scandir(mocked_path, files).values()
+		mock_listdir.return_value = list(self._generate_scandir(mocked_path, files).values())
 
 		## test
 		result = octoprint.timelapse.get_finished_timelapses()
@@ -138,7 +138,7 @@ class TimelapseTest(unittest.TestCase):
 		mocked_path = "/path/to/timelapse/tmp"
 		self.settings.getBaseFolder.return_value = mocked_path
 
-		mock_scandir.return_value = self._generate_scandir(mocked_path, files).values()
+		mock_scandir.return_value = list(self._generate_scandir(mocked_path, files).values())
 
 		## test
 		result = octoprint.timelapse.get_unrendered_timelapses()

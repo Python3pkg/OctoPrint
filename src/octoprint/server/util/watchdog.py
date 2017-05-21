@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -23,7 +23,7 @@ class GcodeWatchdogHandler(watchdog.events.PatternMatchingEventHandler):
 	"""
 
 	def __init__(self, file_manager, printer):
-		watchdog.events.PatternMatchingEventHandler.__init__(self, patterns=map(lambda x: "*.%s" % x, octoprint.filemanager.get_all_extensions()))
+		watchdog.events.PatternMatchingEventHandler.__init__(self, patterns=["*.%s" % x for x in octoprint.filemanager.get_all_extensions()])
 
 		self._logger = logging.getLogger(__name__)
 

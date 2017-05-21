@@ -9,7 +9,7 @@
 # versioneer-0.15+dev (https://github.com/warner/python-versioneer)
 
 """Git implementation of _version.py."""
-from __future__ import absolute_import, division, print_function
+
 
 import errno
 import os
@@ -316,7 +316,7 @@ def git_parse_lookup_file(path):
                 continue
 
             try:
-                split_line = map(lambda x: x.strip(), line.split())
+                split_line = [x.strip() for x in line.split()]
                 if not len(split_line):
                     continue
 

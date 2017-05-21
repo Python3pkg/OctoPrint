@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -45,23 +45,23 @@ def connectionCommand():
 		port = None
 		baudrate = None
 		printerProfile = None
-		if "port" in data.keys():
+		if "port" in list(data.keys()):
 			port = data["port"]
 			if port not in connection_options["ports"] and port != "AUTO":
 				return make_response("Invalid port: %s" % port, 400)
-		if "baudrate" in data.keys():
+		if "baudrate" in list(data.keys()):
 			baudrate = data["baudrate"]
 			if baudrate not in connection_options["baudrates"] and baudrate != 0:
 				return make_response("Invalid baudrate: %d" % baudrate, 400)
-		if "printerProfile" in data.keys():
+		if "printerProfile" in list(data.keys()):
 			printerProfile = data["printerProfile"]
 			if not printerProfileManager.exists(printerProfile):
 				return make_response("Invalid printer profile: %s" % printerProfile, 400)
-		if "save" in data.keys() and data["save"]:
+		if "save" in list(data.keys()) and data["save"]:
 			settings().set(["serial", "port"], port)
 			settings().setInt(["serial", "baudrate"], baudrate)
 			printerProfileManager.set_default(printerProfile)
-		if "autoconnect" in data.keys():
+		if "autoconnect" in list(data.keys()):
 			settings().setBoolean(["serial", "autoconnect"], data["autoconnect"])
 		settings().save()
 		printer.connect(port=port, baudrate=baudrate, profile=printerProfile)
@@ -80,7 +80,7 @@ def _get_options():
 	options = dict(
 		ports=connection_options["ports"],
 		baudrates=connection_options["baudrates"],
-		printerProfiles=[dict(id=printer_profile["id"], name=printer_profile["name"] if "name" in printer_profile else printer_profile["id"]) for printer_profile in profile_options.values() if "id" in printer_profile],
+		printerProfiles=[dict(id=printer_profile["id"], name=printer_profile["name"] if "name" in printer_profile else printer_profile["id"]) for printer_profile in list(profile_options.values()) if "id" in printer_profile],
 		portPreference=connection_options["portPreference"],
 		baudratePreference=connection_options["baudratePreference"],
 		printerProfilePreference=default_profile["id"] if "id" in default_profile else None

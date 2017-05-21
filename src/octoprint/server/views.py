@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -26,6 +26,7 @@ import base64
 from . import util
 
 import logging
+import collections
 _logger = logging.getLogger(__name__)
 
 _templates = dict()
@@ -45,7 +46,7 @@ def _preemptive_unless(base_url=None, additional_unless=None):
 
 	recording_disabled = request.headers.get("X-Preemptive-Record", "yes") == "no"
 
-	if callable(additional_unless):
+	if isinstance(additional_unless, collections.Callable):
 		return recording_disabled or disabled_for_root or additional_unless()
 	else:
 		return recording_disabled or disabled_for_root
@@ -66,7 +67,7 @@ def _preemptive_data(key, path=None, base_url=None, data=None, additional_reques
 	# add data if we have any
 	if data is not None:
 		try:
-			if callable(data):
+			if isinstance(data, collections.Callable):
 				data = data()
 			if data:
 				if "query_string" in data:
@@ -76,7 +77,7 @@ def _preemptive_data(key, path=None, base_url=None, data=None, additional_reques
 			_logger.exception("Error collecting data for preemptive cache from plugin {}".format(key))
 
 	# add additional request data if we have any
-	if callable(additional_request_data):
+	if isinstance(additional_request_data, collections.Callable):
 		try:
 			ard = additional_request_data()
 			if ard:
@@ -95,7 +96,7 @@ def _cache_key(ui, url=None, locale=None, additional_key_data=None):
 		locale = g.locale.language if g.locale else "en"
 
 	k = "ui:{}:{}:{}".format(ui, url, locale)
-	if callable(additional_key_data):
+	if isinstance(additional_key_data, collections.Callable):
 		try:
 			ak = additional_key_data()
 			if ak:
@@ -231,7 +232,7 @@ def index():
 			return force_refresh or etag_different
 
 		def collect_files():
-			if callable(custom_files):
+			if isinstance(custom_files, collections.Callable):
 				try:
 					files = custom_files()
 					if files:
@@ -246,7 +247,7 @@ def index():
 
 			files = templates + assets + translations
 
-			if callable(additional_files):
+			if isinstance(additional_files, collections.Callable):
 				try:
 					af = additional_files()
 					if af:
@@ -257,7 +258,7 @@ def index():
 			return sorted(set(files))
 
 		def compute_lastmodified(files=None):
-			if callable(custom_lastmodified):
+			if isinstance(custom_lastmodified, collections.Callable):
 				try:
 					lastmodified = custom_lastmodified()
 					if lastmodified:
@@ -270,7 +271,7 @@ def index():
 			return _compute_date(files)
 
 		def compute_etag(files=None, lastmodified=None, additional=None):
-			if callable(custom_etag):
+			if isinstance(custom_etag, collections.Callable):
 				try:
 					etag = custom_etag()
 					if etag:
@@ -282,7 +283,7 @@ def index():
 				files = collect_files()
 			if lastmodified is None:
 				lastmodified = compute_lastmodified(files)
-			if lastmodified and not isinstance(lastmodified, basestring):
+			if lastmodified and not isinstance(lastmodified, str):
 				from werkzeug.http import http_date
 				lastmodified = http_date(lastmodified)
 			if additional is None:
@@ -329,7 +330,7 @@ def index():
 			view = cached
 
 		template_filter = p.get_ui_custom_template_filter(default_template_filter)
-		if template_filter is not None and callable(template_filter):
+		if template_filter is not None and isinstance(template_filter, collections.Callable):
 			filtered_templates = _filter_templates(_templates[locale], template_filter)
 		else:
 			filtered_templates = _templates[locale]
@@ -419,7 +420,7 @@ def _get_render_kwargs(templates, plugin_names, plugin_vars, now):
 
 	first_run = settings().getBoolean(["server", "firstRun"])
 	locales = dict((l.language, dict(language=l.language, display=l.display_name, english=l.english_name)) for l in LOCALES)
-	extensions = map(lambda ext: ".{}".format(ext), get_all_extensions())
+	extensions = [".{}".format(ext) for ext in get_all_extensions()]
 
 	#~~ prepare full set of template vars for rendering
 
@@ -470,7 +471,7 @@ def _process_templates():
 	)
 
 	hooks = pluginManager.get_hooks("octoprint.ui.web.templatetypes")
-	for name, hook in hooks.items():
+	for name, hook in list(hooks.items()):
 		try:
 			result = hook(dict(template_sorting), dict(template_rules))
 		except:
@@ -506,7 +507,7 @@ def _process_templates():
 
 				template_rules["plugin_" + name + "_" + key] = rule
 				template_sorting["plugin_" + name + "_" + key] = order
-	template_types = template_rules.keys()
+	template_types = list(template_rules.keys())
 
 	# navbar
 
@@ -624,7 +625,7 @@ def _process_templates():
 		if not isinstance(configs, (list, tuple)):
 			configs = []
 
-		for var_name, var_value in vars.items():
+		for var_name, var_value in list(vars.items()):
 			plugin_vars["plugin_" + name + "_" + var_name] = var_value
 
 		includes = _process_template_configs(name, implementation, configs, template_rules)
@@ -685,7 +686,7 @@ def _process_templates():
 			extractor = config_extractor
 
 			# if template type provides custom extractor, make sure its exceptions are handled
-			if "key_extractor" in template_sorting[t] and callable(template_sorting[t]["key_extractor"]):
+			if "key_extractor" in template_sorting[t] and isinstance(template_sorting[t]["key_extractor"], collections.Callable):
 				def create_safe_extractor(extractor):
 					def f(x, k):
 						try:
@@ -818,13 +819,12 @@ def _process_template_config(name, implementation, rule, config=None, counter=1)
 
 def _filter_templates(templates, template_filter):
 	filtered_templates = dict()
-	for template_type, template_collection in templates.items():
+	for template_type, template_collection in list(templates.items()):
 		filtered_entries = dict()
-		for template_key, template_entry in template_collection["entries"].items():
+		for template_key, template_entry in list(template_collection["entries"].items()):
 			if template_filter(template_type, template_key):
 				filtered_entries[template_key] = template_entry
-		filtered_templates[template_type] = dict(order=filter(lambda x: x in filtered_entries,
-		                                                      template_collection["order"]),
+		filtered_templates[template_type] = dict(order=[x for x in template_collection["order"] if x in filtered_entries],
 		                                         entries=filtered_entries)
 	return filtered_templates
 
@@ -867,7 +867,7 @@ def _compute_etag_for_i18n(locale, domain, files=None, lastmodified=None):
 		files = _get_all_translationfiles(locale, domain)
 	if lastmodified is None:
 		lastmodified = _compute_date(files)
-	if lastmodified and not isinstance(lastmodified, basestring):
+	if lastmodified and not isinstance(lastmodified, str):
 		from werkzeug.http import http_date
 		lastmodified = http_date(lastmodified)
 
@@ -885,7 +885,7 @@ def _compute_date_for_i18n(locale, domain):
 
 def _compute_date(files):
 	from datetime import datetime
-	timestamps = map(lambda path: os.stat(path).st_mtime, files) + [0] if files else []
+	timestamps = [os.stat(path).st_mtime for path in files] + [0] if files else []
 	max_timestamp = max(*timestamps) if timestamps else None
 	if max_timestamp:
 		# we set the micros to 0 since microseconds are not speced for HTTP
@@ -936,7 +936,7 @@ def _get_all_translationfiles(locale, domain):
 
 	# plugin translations
 	plugins = octoprint.plugin.plugin_manager().enabled_plugins
-	for name, plugin in plugins.items():
+	for name, plugin in list(plugins.items()):
 		dirs = [os.path.join(user_plugin_path, name), os.path.join(plugin.location, 'translations')]
 		for dirname in dirs:
 			if not os.path.isdir(dirname):

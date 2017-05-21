@@ -1,11 +1,12 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 __copyright__ = "Copyright (C) 2015 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
 import logging
 import os
+import collections
 
 try:
 	from os import scandir, walk
@@ -38,7 +39,7 @@ class FilteredFileSystemLoader(FileSystemLoader):
 		self.path_filter = path_filter
 
 	def get_source(self, environment, template):
-		if callable(self.path_filter):
+		if isinstance(self.path_filter, collections.Callable):
 			pieces = split_template_path(template)
 			if not self._combined_filter(os.path.join(*pieces)):
 				raise TemplateNotFound(template)
@@ -48,14 +49,13 @@ class FilteredFileSystemLoader(FileSystemLoader):
 	def list_templates(self):
 		result = FileSystemLoader.list_templates(self)
 
-		if callable(self.path_filter):
+		if isinstance(self.path_filter, collections.Callable):
 			result = sorted(filter(self._combined_filter, result))
 
 		return result
 
 	def _combined_filter(self, path):
-		filter_results = map(lambda x: not os.path.exists(os.path.join(x, path)) or self.path_filter(os.path.join(x, path)),
-		                     self.searchpath)
+		filter_results = [not os.path.exists(os.path.join(x, path)) or self.path_filter(os.path.join(x, path)) for x in self.searchpath]
 		return all(filter_results)
 
 
@@ -89,7 +89,7 @@ class SelectedFilesLoader(BaseLoader):
 		return contents, path, uptodate
 
 	def list_templates(self):
-		return self.files.keys()
+		return list(self.files.keys())
 
 
 def get_all_template_paths(loader):
@@ -105,13 +105,13 @@ def get_all_template_paths(loader):
 	def collect_templates_for_loader(loader):
 		if isinstance(loader, SelectedFilesLoader):
 			import copy
-			return copy.copy(loader.files.values())
+			return copy.copy(list(loader.files.values()))
 
 		elif isinstance(loader, FilteredFileSystemLoader):
 			result = []
 			for folder in loader.searchpath:
 				result += walk_folder(folder)
-			return filter(loader.path_filter, result)
+			return list(filter(loader.path_filter, result))
 
 		elif isinstance(loader, FileSystemLoader):
 			result = []
@@ -121,7 +121,7 @@ def get_all_template_paths(loader):
 
 		elif isinstance(loader, PrefixLoader):
 			result = []
-			for subloader in loader.mapping.values():
+			for subloader in list(loader.mapping.values()):
 				result += collect_templates_for_loader(subloader)
 			return result
 

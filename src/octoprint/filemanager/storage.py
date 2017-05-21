@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -824,7 +824,7 @@ class LocalFileStorage(StorageInterface):
 		include a trailing slash for a string ``path`` or an empty last element for a list ``path``.
 		"""
 		name = None
-		if isinstance(path, (str, unicode, basestring)):
+		if isinstance(path, str):
 			if path.startswith(self.basefolder):
 				path = path[len(self.basefolder):]
 			path = path.replace(os.path.sep, "/")
@@ -908,7 +908,7 @@ class LocalFileStorage(StorageInterface):
 	def path_in_storage(self, path):
 		if isinstance(path, (tuple, list)):
 			path = self.join_path(*path)
-		if isinstance(path, (str, unicode, basestring)):
+		if isinstance(path, str):
 			if path.startswith(self.basefolder):
 				path = path[len(self.basefolder):]
 			path = path.replace(os.path.sep, "/")
@@ -1138,7 +1138,7 @@ class LocalFileStorage(StorageInterface):
 						continue
 
 					matches = True
-					for k, v in data.items():
+					for k, v in list(data.items()):
 						if not k in link or not link[k] == v:
 							matches = False
 							break
@@ -1238,7 +1238,7 @@ class LocalFileStorage(StorageInterface):
 				if not entry_filter or entry_filter(entry_name, entry_data):
 					def get_size():
 						total_size = 0
-						for element in entry_data["children"].values():
+						for element in list(entry_data["children"].values()):
 							if "size" in element:
 								total_size += element["size"]
 
@@ -1311,7 +1311,7 @@ class LocalFileStorage(StorageInterface):
 
 			if "hash" in metadata[name]:
 				hash = metadata[name]["hash"]
-				for m in metadata.values():
+				for m in list(metadata.values()):
 					if not "links" in m:
 						continue
 					links_hash = lambda link: "hash" in link and link["hash"] == hash and "rel" in link and (link["rel"] == "model" or link["rel"] == "machinecode")

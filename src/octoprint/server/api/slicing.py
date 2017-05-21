@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -201,7 +201,7 @@ def _getSlicingProfilesData(slicer, require_configured=False):
 	profiles = slicingManager.all_profiles(slicer, require_configured=require_configured)
 
 	result = dict()
-	for name, profile in profiles.items():
+	for name, profile in list(profiles.items()):
 		result[name] = _getSlicingProfileData(slicer, name, profile)
 	return result
 

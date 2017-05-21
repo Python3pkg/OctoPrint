@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 __author__ = "Gina Häußge <osd@foosel.net> based on work by David Braam"
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2013 David Braam - Released under terms of the AGPLv3 License"
@@ -10,10 +10,11 @@ import glob
 import time
 import re
 import threading
+import collections
 try:
 	import queue
 except ImportError:
-	import Queue as queue
+	import queue as queue
 import logging
 import serial
 import octoprint.plugin
@@ -31,7 +32,7 @@ from octoprint.util import get_exception_string, sanitize_ascii, filter_non_asci
 	to_unicode, bom_aware_open, TypedQueue, TypeAlreadyInQueue, chunks
 
 try:
-	import _winreg
+	import winreg
 except:
 	pass
 
@@ -134,10 +135,10 @@ def serialList():
 	baselist=[]
 	if os.name=="nt":
 		try:
-			key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,"HARDWARE\\DEVICEMAP\\SERIALCOMM")
+			key=winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,"HARDWARE\\DEVICEMAP\\SERIALCOMM")
 			i=0
 			while(1):
-				baselist+=[_winreg.EnumValue(key,i)[1]]
+				baselist+=[winreg.EnumValue(key,i)[1]]
 				i+=1
 		except:
 			pass
@@ -292,7 +293,7 @@ class MachineCom(object):
 
 		self._timeout = None
 		self._timeout_intervals = dict()
-		for key, value in settings().get(["serial", "timeout"], merged=True, asdict=True).items():
+		for key, value in list(settings().get(["serial", "timeout"], merged=True, asdict=True).items()):
 			try:
 				self._timeout_intervals[key] = float(value)
 			except:
@@ -300,7 +301,7 @@ class MachineCom(object):
 
 		self._consecutive_timeouts = 0
 		self._consecutive_timeout_maximums = dict()
-		for key, value in settings().get(["serial", "maxCommunicationTimeouts"], merged=True, asdict=True).items():
+		for key, value in list(settings().get(["serial", "maxCommunicationTimeouts"], merged=True, asdict=True).items()):
 			try:
 				self._consecutive_timeout_maximums[key] = int(value)
 			except:
@@ -442,7 +443,7 @@ class MachineCom(object):
 		self._serialLogger.debug(message)
 
 	def _to_logfile_with_terminal(self, message=None, level=logging.INFO):
-		log = "Last lines in terminal:\n" + "\n".join(map(lambda x: "| " + x, list(self._terminal_log)))
+		log = "Last lines in terminal:\n" + "\n".join(["| " + x for x in list(self._terminal_log)])
 		if message is not None:
 			log = message + "\n| " + log
 		self._logger.log(level, log)
@@ -459,7 +460,7 @@ class MachineCom(object):
 		if state is None:
 			state = self._state
 
-		possible_states = filter(lambda x: x.startswith("STATE_"), self.__class__.__dict__.keys())
+		possible_states = [x for x in list(self.__class__.__dict__.keys()) if x.startswith("STATE_")]
 		for possible_state in possible_states:
 			if getattr(self, possible_state) == state:
 				return possible_state[len("STATE_"):]
@@ -695,13 +696,7 @@ class MachineCom(object):
 		if template is None:
 			scriptLines = []
 		else:
-			scriptLines = filter(
-				lambda x: x is not None and x.strip() != "",
-				map(
-					lambda x: process_gcode_line(x, offsets=self._tempOffsets, current_tool=self._currentTool),
-					template.split("\n")
-				)
-			)
+			scriptLines = [x for x in [process_gcode_line(x, offsets=self._tempOffsets, current_tool=self._currentTool) for x in template.split("\n")] if x is not None and x.strip() != ""]
 
 		for hook in self._gcodescript_hooks:
 			try:
@@ -716,16 +711,16 @@ class MachineCom(object):
 
 				def to_list(data):
 					if isinstance(data, str):
-						data = map(str.strip, data.split("\n"))
-					elif isinstance(data, unicode):
-						data = map(unicode.strip, data.split("\n"))
+						data = list(map(str.strip, data.split("\n")))
+					elif isinstance(data, str):
+						data = list(map(str.strip, data.split("\n")))
 
 					if isinstance(data, (list, tuple)):
 						return list(data)
 					else:
 						return None
 
-				prefix, suffix = map(to_list, retval)
+				prefix, suffix = list(map(to_list, retval))
 				if prefix:
 					scriptLines = list(prefix) + scriptLines
 				if suffix:
@@ -996,10 +991,10 @@ class MachineCom(object):
 		current_tool = self._currentTool if self._currentTool is not None else 0
 		maxToolNum, parsedTemps = parse_temperature_line(line, current_tool)
 
-		if "T0" in parsedTemps.keys():
+		if "T0" in list(parsedTemps.keys()):
 			for n in range(maxToolNum + 1):
 				tool = "T%d" % n
-				if not tool in parsedTemps.keys():
+				if not tool in list(parsedTemps.keys()):
 					continue
 
 				actual, target = parsedTemps[tool]
@@ -1012,7 +1007,7 @@ class MachineCom(object):
 					self._temp[n] = (actual, None)
 
 		# bed temperature
-		if "B" in parsedTemps.keys():
+		if "B" in list(parsedTemps.keys()):
 			actual, target = parsedTemps["B"]
 			if target is not None:
 				self._bedTemp = (actual, target)
@@ -1213,7 +1208,7 @@ class MachineCom(object):
 						toolNum = int(matchExtr.group(1))
 						try:
 							target = float(matchExtr.group(2))
-							if toolNum in self._temp.keys() and self._temp[toolNum] is not None and isinstance(self._temp[toolNum], tuple):
+							if toolNum in list(self._temp.keys()) and self._temp[toolNum] is not None and isinstance(self._temp[toolNum], tuple):
 								(actual, oldTarget) = self._temp[toolNum]
 								self._temp[toolNum] = (actual, target)
 							else:
@@ -1341,11 +1336,11 @@ class MachineCom(object):
 
 				##~~ Parsing for pause triggers
 				if pause_triggers and not self.isStreaming():
-					if "enable" in pause_triggers.keys() and pause_triggers["enable"].search(line) is not None:
+					if "enable" in list(pause_triggers.keys()) and pause_triggers["enable"].search(line) is not None:
 						self.setPause(True)
-					elif "disable" in pause_triggers.keys() and pause_triggers["disable"].search(line) is not None:
+					elif "disable" in list(pause_triggers.keys()) and pause_triggers["disable"].search(line) is not None:
 						self.setPause(False)
-					elif "toggle" in pause_triggers.keys() and pause_triggers["toggle"].search(line) is not None:
+					elif "toggle" in list(pause_triggers.keys()) and pause_triggers["toggle"].search(line) is not None:
 						self.setPause(not self.isPaused())
 
 				### Baudrate detection
@@ -1552,7 +1547,7 @@ class MachineCom(object):
 					continue
 
 				outputs = dict()
-				for template_key, template in feedback_controls[feedback_key]["templates"].items():
+				for template_key, template in list(feedback_controls[feedback_key]["templates"].items()):
 					try:
 						output = template.format(*match.groups())
 					except KeyError:
@@ -1616,7 +1611,7 @@ class MachineCom(object):
 		if self.isBusy():
 			return self._timeout_intervals.get("temperature", busy_default)
 
-		for temp in [self._temp[k][1] for k in self._temp.keys()]:
+		for temp in [self._temp[k][1] for k in list(self._temp.keys())]:
 			if temp > self._temperatureTargetSetThreshold:
 				return self._timeout_intervals.get("temperatureTargetSet", target_default)
 
@@ -1713,7 +1708,7 @@ class MachineCom(object):
 
 			return serial_obj
 
-		serial_factories = self._serial_factory_hooks.items() + [("default", default)]
+		serial_factories = list(self._serial_factory_hooks.items()) + [("default", default)]
 		for name, factory in serial_factories:
 			try:
 				serial_obj = factory(self, self._port, self._baudrate, settings().getFloat(["serial", "timeout", "connection"]))
@@ -1805,7 +1800,7 @@ class MachineCom(object):
 				self._log("WARN: While reading last line: %s" % e)
 				self._log("Recv: " + repr(ret))
 
-		for name, hook in self._received_message_hooks.items():
+		for name, hook in list(self._received_message_hooks.items()):
 			try:
 				ret = hook(self, ret)
 			except:
@@ -2094,7 +2089,7 @@ class MachineCom(object):
 							self._do_send_without_checksum(command_to_send)
 
 					# trigger "sent" phase and use up one "ok"
-					if on_sent is not None and callable(on_sent):
+					if on_sent is not None and isinstance(on_sent, collections.Callable):
 						# we have a sent callback for this specific command, let's execute it now
 						on_sent()
 					self._process_command_phase("sent", command, command_type, gcode=gcode)
@@ -2133,7 +2128,7 @@ class MachineCom(object):
 			gcode = gcode_command_for_cmd(command)
 
 		# send it through the phase specific handlers provided by plugins
-		for name, hook in self._gcode_hooks[phase].items():
+		for name, hook in list(self._gcode_hooks[phase].items()):
 			try:
 				hook_result = hook(self, phase, command, command_type, gcode)
 			except:
@@ -2167,7 +2162,7 @@ class MachineCom(object):
 			# handler didn't return anything, we'll just continue
 			return original_tuple
 
-		if isinstance(handler_result, basestring):
+		if isinstance(handler_result, str):
 			# handler did return just a string, we'll turn that into a 1-tuple now
 			handler_result = (handler_result,)
 		elif not isinstance(handler_result, (tuple, list)):
@@ -2346,7 +2341,7 @@ class MachineCom(object):
 		if match:
 			try:
 				target = float(match.group("value"))
-				if toolNum in self._temp.keys() and self._temp[toolNum] is not None and isinstance(self._temp[toolNum], tuple):
+				if toolNum in list(self._temp.keys()) and self._temp[toolNum] is not None and isinstance(self._temp[toolNum], tuple):
 					(actual, oldTarget) = self._temp[toolNum]
 					self._temp[toolNum] = (actual, target)
 				else:
@@ -2816,9 +2811,9 @@ def convert_pause_triggers(configured_triggers):
 			pass
 
 	result = dict()
-	for t in triggers.keys():
+	for t in list(triggers.keys()):
 		if len(triggers[t]) > 0:
-			result[t] = re.compile("|".join(map(lambda pattern: "({pattern})".format(pattern=pattern), triggers[t])))
+			result[t] = re.compile("|".join(["({pattern})".format(pattern=pattern) for pattern in triggers[t]]))
 	return result
 
 
@@ -2855,7 +2850,7 @@ def convert_feedback_controls(configured_controls):
 		preprocess_feedback_control(control, feedback_controls)
 
 	feedback_pattern = []
-	for match_key, entry in feedback_controls.items():
+	for match_key, entry in list(feedback_controls.items()):
 		if entry["matcher"] is None or entry["pattern"] is None:
 			continue
 		feedback_pattern.append("(?P<group{key}>{pattern})".format(key=match_key, pattern=entry["pattern"]))
@@ -2888,7 +2883,7 @@ def canonicalize_temperatures(parsed, current):
 	    dict: the canonicalized version of ``parsed``
 	"""
 
-	reported_extruders = filter(lambda x: x.startswith("T"), parsed.keys())
+	reported_extruders = [x for x in list(parsed.keys()) if x.startswith("T")]
 	if not "T" in reported_extruders:
 		# Our reported_extruders are either empty or consist purely
 		# of Tn keys, no need for any action

@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 __author__ = "Gina Häußge <osd@foosel.net> based on work by David Braam"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 __copyright__ = "Copyright (C) 2013 David Braam, Gina Häußge - Released under terms of the AGPLv3 License"
@@ -456,7 +456,7 @@ class gcode(object):
 		self.totalMoveTimeMinute = totalMoveTimeMinute
 
 	def _parseCuraProfileString(self, comment, prefix):
-		return {key: value for (key, value) in map(lambda x: x.split("=", 1), zlib.decompress(base64.b64decode(comment[len(prefix):])).split("\b"))}
+		return {key: value for (key, value) in [x.split("=", 1) for x in zlib.decompress(base64.b64decode(comment[len(prefix):])).split("\b")]}
 
 def getCodeInt(line, code):
 	n = line.find(code) + 1

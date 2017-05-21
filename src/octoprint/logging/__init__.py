@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import
+
 
 from octoprint.logging import handlers
 
@@ -120,7 +120,7 @@ def get_divider_line(c, message=None, length=78, indent=3):
 		formatted divider line
 	"""
 
-	assert isinstance(c, (str, unicode, bytes)), "c is not text"
+	assert isinstance(c, (str, bytes)), "c is not text"
 	assert len(c) == 1, "c is not a single character"
 	assert isinstance(length, int), "length is not an int"
 	assert isinstance(indent, int), "indent is not an int"
@@ -128,7 +128,7 @@ def get_divider_line(c, message=None, length=78, indent=3):
 	if message is None:
 		return c * length
 
-	assert isinstance(message, (str, unicode, bytes)), "message is not text"
+	assert isinstance(message, (str, bytes)), "message is not text"
 
 	space = length - 2 * (indent + 1)
 	if space >= len(message):

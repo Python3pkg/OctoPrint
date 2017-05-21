@@ -3,7 +3,7 @@
 This module holds the standard implementation of the :class:`PrinterInterface` and it helpers.
 """
 
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -25,6 +25,7 @@ from octoprint.settings import settings
 from octoprint.util import comm as comm
 from octoprint.util import InvariantContainer
 from octoprint.util import to_unicode
+import collections
 
 
 class Printer(PrinterInterface, comm.MachineComPrintCallback):
@@ -252,14 +253,14 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 			raise UnknownScript(name)
 
 	def jog(self, axes, relative=True, speed=None, *args, **kwargs):
-		if isinstance(axes, basestring):
+		if isinstance(axes, str):
 			# legacy parameter format, there should be an amount as first anonymous positional arguments too
 			axis = axes
 
 			if not len(args) >= 1:
 				raise ValueError("amount not set")
 			amount = args[0]
-			if not isinstance(amount, (int, long, float)):
+			if not isinstance(amount, (int, float)):
 				raise ValueError("amount must be a valid number: {amount}".format(amount=amount))
 
 			axes = dict()
@@ -272,7 +273,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 			if not axis in PrinterInterface.valid_axes:
 				raise ValueError("Invalid axis {}, valid axes are {}".format(axis, ", ".join(PrinterInterface.valid_axes)))
 
-		command = "G1 {}".format(" ".join(["{}{}".format(axis.upper(), amount) for axis, amount in axes.items()]))
+		command = "G1 {}".format(" ".join(["{}{}".format(axis.upper(), amount) for axis, amount in list(axes.items())]))
 
 		if speed is None:
 			printer_profile = self._printerProfileManager.get_current_or_default()
@@ -290,19 +291,19 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 
 	def home(self, axes):
 		if not isinstance(axes, (list, tuple)):
-			if isinstance(axes, (str, unicode)):
+			if isinstance(axes, str):
 				axes = [axes]
 			else:
 				raise ValueError("axes is neither a list nor a string: {axes}".format(axes=axes))
 
-		validated_axes = filter(lambda x: x in PrinterInterface.valid_axes, map(lambda x: x.lower(), axes))
+		validated_axes = [x for x in [x.lower() for x in axes] if x in PrinterInterface.valid_axes]
 		if len(axes) != len(validated_axes):
 			raise ValueError("axes contains invalid axes: {axes}".format(axes=axes))
 
-		self.commands(["G91", "G28 %s" % " ".join(map(lambda x: "%s0" % x.upper(), validated_axes)), "G90"])
+		self.commands(["G91", "G28 %s" % " ".join(["%s0" % x.upper() for x in validated_axes]), "G90"])
 
 	def extrude(self, amount):
-		if not isinstance(amount, (int, long, float)):
+		if not isinstance(amount, (int, float)):
 			raise ValueError("amount must be a valid number: {amount}".format(amount=amount))
 
 		printer_profile = self._printerProfileManager.get_current_or_default()
@@ -320,7 +321,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 		if not PrinterInterface.valid_heater_regex.match(heater):
 			raise ValueError("heater must match \"tool[0-9]+\" or \"bed\": {heater}".format(heater=heater))
 
-		if not isinstance(value, (int, long, float)) or value < 0:
+		if not isinstance(value, (int, float)) or value < 0:
 			raise ValueError("value must be a valid number >= 0: {value}".format(value=value))
 
 		if heater.startswith("tool"):
@@ -342,8 +343,8 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 		if not isinstance(offsets, dict):
 			raise ValueError("offsets must be a dict")
 
-		validated_keys = filter(lambda x: PrinterInterface.valid_heater_regex.match(x), offsets.keys())
-		validated_values = filter(lambda x: isinstance(x, (int, long, float)), offsets.values())
+		validated_keys = [x for x in list(offsets.keys()) if PrinterInterface.valid_heater_regex.match(x)]
+		validated_values = [x for x in list(offsets.values()) if isinstance(x, (int, float))]
 
 		if len(validated_keys) != len(offsets):
 			raise ValueError("offsets contains invalid keys: {offsets}".format(offsets=offsets))
@@ -357,7 +358,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 		self._stateMonitor.set_temp_offsets(offsets)
 
 	def _convert_rate_value(self, factor, min=0, max=200):
-		if not isinstance(factor, (int, float, long)):
+		if not isinstance(factor, (int, float)):
 			raise ValueError("factor is not a number")
 
 		if isinstance(factor, float):
@@ -517,7 +518,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 
 		result = {}
 		if self._temp is not None:
-			for tool in self._temp.keys():
+			for tool in list(self._temp.keys()):
 				result["tool%d" % tool] = {
 					"actual": self._temp[tool][0],
 					"target": self._temp[tool][1],
@@ -572,7 +573,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 	def get_sd_files(self):
 		if self._comm is None or not self._comm.isSdReady():
 			return []
-		return map(lambda x: (x[0][1:], x[1]), self._comm.getSdFiles())
+		return [(x[0][1:], x[1]) for x in self._comm.getSdFiles()]
 
 	def add_sd_file(self, filename, absolutePath, streamingFinishedCallback):
 		if not self._comm or self._comm.isBusy() or not self._comm.isSdReady():
@@ -582,7 +583,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 		self._streamingFinishedCallback = streamingFinishedCallback
 
 		self.refresh_sd_files(blocking=True)
-		existingSdFiles = map(lambda x: x[0], self._comm.getSdFiles())
+		existingSdFiles = [x[0] for x in self._comm.getSdFiles()]
 
 		remoteName = util.get_dos_filename(filename,
 		                                   existing_filenames=existingSdFiles,
@@ -823,7 +824,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 		data = {
 			"time": currentTimeUtc
 		}
-		for tool in temp.keys():
+		for tool in list(temp.keys()):
 			data["tool%d" % tool] = {
 				"actual": temp[tool][0],
 				"target": temp[tool][1]
@@ -895,7 +896,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 				if "analysis" in fileData:
 					if estimatedPrintTime is None and "estimatedPrintTime" in fileData["analysis"]:
 						estimatedPrintTime = fileData["analysis"]["estimatedPrintTime"]
-					if "filament" in fileData["analysis"].keys():
+					if "filament" in list(fileData["analysis"].keys()):
 						filament = fileData["analysis"]["filament"]
 				if "statistics" in fileData:
 					printer_profile = self._printerProfileManager.get_current_or_default()["id"]
@@ -1195,7 +1196,7 @@ class StateMonitor(object):
 		self._worker.start()
 
 	def _get_current_progress(self):
-		if callable(self._on_get_progress):
+		if isinstance(self._on_get_progress, collections.Callable):
 			return self._on_get_progress()
 		return self._progress
 

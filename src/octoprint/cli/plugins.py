@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
 __copyright__ = "Copyright (C) 2015 The OctoPrint Project - Released under terms of the AGPLv3 License"
@@ -79,7 +79,7 @@ class OctoPrintPluginCommands(click.MultiCommand):
 		import collections
 		result = collections.OrderedDict()
 
-		for name, hook in self.hooks.items():
+		for name, hook in list(self.hooks.items()):
 			try:
 				commands = hook(self, pass_octoprint_ctx)
 				for command in commands:

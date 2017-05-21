@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -10,6 +10,7 @@ import octoprint.plugin
 
 
 from flask.ext.babel import gettext
+import collections
 
 
 class CoreWizardPlugin(octoprint.plugin.AssetPlugin,
@@ -26,7 +27,7 @@ class CoreWizardPlugin(octoprint.plugin.AssetPlugin,
 		additional = self._get_subwizard_attrs("_get_", "_additional_wizard_template_data")
 
 		result = list()
-		for key, method in required.items():
+		for key, method in list(required.items()):
 			if not method():
 				continue
 
@@ -57,7 +58,7 @@ class CoreWizardPlugin(octoprint.plugin.AssetPlugin,
 
 	def is_wizard_required(self):
 		methods = self._get_subwizard_attrs("_is_", "_wizard_required")
-		return self._settings.global_get(["server", "firstRun"]) and any(map(lambda m: m(), methods.values()))
+		return self._settings.global_get(["server", "firstRun"]) and any([m() for m in list(methods.values())])
 
 	def get_wizard_details(self):
 		result = dict()
@@ -92,13 +93,13 @@ class CoreWizardPlugin(octoprint.plugin.AssetPlugin,
 			data = request.json
 
 		if "ac" in data and data["ac"] in valid_boolean_trues and \
-						"user" in data.keys() and "pass1" in data.keys() and \
-						"pass2" in data.keys() and data["pass1"] == data["pass2"]:
+						"user" in list(data.keys()) and "pass1" in list(data.keys()) and \
+						"pass2" in list(data.keys()) and data["pass1"] == data["pass2"]:
 			# configure access control
 			self._settings.global_set_boolean(["accessControl", "enabled"], True)
 			self._user_manager.enable()
 			self._user_manager.addUser(data["user"], data["pass1"], True, ["user", "admin"], overwrite=True)
-		elif "ac" in data.keys() and not data["ac"] in valid_boolean_trues:
+		elif "ac" in list(data.keys()) and not data["ac"] in valid_boolean_trues:
 			# disable access control
 			self._settings.global_set_boolean(["accessControl", "enabled"], False)
 
@@ -164,7 +165,7 @@ class CoreWizardPlugin(octoprint.plugin.AssetPlugin,
 				continue
 
 			attr = getattr(self, item)
-			if callable(callback):
+			if isinstance(callback, collections.Callable):
 				callback(key, attr)
 			result[key] = attr
 

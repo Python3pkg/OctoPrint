@@ -1,5 +1,5 @@
 #!/bin/env python2
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Haeussge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -29,7 +29,7 @@ def _log(lines, prefix=None, stream=None):
 		output_stream = sys.stderr
 
 	for line in lines:
-		to_print = _to_str(u"{} {}".format(prefix, _to_unicode(line.rstrip(), errors="replace")),
+		to_print = _to_str("{} {}".format(prefix, _to_unicode(line.rstrip(), errors="replace")),
 		                   errors="replace")
 		print(to_print, file=output_stream)
 
@@ -44,7 +44,7 @@ def _to_unicode(s_or_u, encoding="utf-8", errors="strict"):
 
 def _to_str(s_or_u, encoding="utf-8", errors="strict"):
 	"""Make sure ``s_or_u`` is a str."""
-	if isinstance(s_or_u, unicode):
+	if isinstance(s_or_u, str):
 		return s_or_u.encode(encoding, errors=errors)
 	else:
 		return s_or_u
@@ -89,13 +89,13 @@ def _execute(command, **kwargs):
 		while p.commands[0].poll() is None:
 			lines = p.stderr.readlines(timeout=0.5)
 			if lines:
-				lines = map(lambda x: _to_unicode(x, errors="replace"), lines)
+				lines = [_to_unicode(x, errors="replace") for x in lines]
 				_log_stderr(*lines)
 				all_stderr += list(lines)
 
 			lines = p.stdout.readlines(timeout=0.5)
 			if lines:
-				lines = map(lambda x: _to_unicode(x, errors="replace"), lines)
+				lines = [_to_unicode(x, errors="replace") for x in lines]
 				_log_stdout(*lines)
 				all_stdout += list(lines)
 
@@ -104,13 +104,13 @@ def _execute(command, **kwargs):
 
 	lines = p.stderr.readlines()
 	if lines:
-		lines = map(lambda x: _to_unicode(x, errors="replace"), lines)
+		lines = [_to_unicode(x, errors="replace") for x in lines]
 		_log_stderr(*lines)
 		all_stderr += lines
 
 	lines = p.stdout.readlines()
 	if lines:
-		lines = map(lambda x: _to_unicode(x, errors="replace"), lines)
+		lines = [_to_unicode(x, errors="replace") for x in lines]
 		_log_stdout(*lines)
 		all_stdout += lines
 
@@ -168,9 +168,9 @@ def _to_error(*lines):
 	if len(lines) == 1:
 		if isinstance(lines[0], (list, tuple)):
 			lines = lines[0]
-		elif not isinstance(lines[0], (str, unicode)):
+		elif not isinstance(lines[0], str):
 			lines = [repr(lines[0]),]
-	return u"\n".join(map(lambda x: _to_unicode(x, errors="replace"), lines))
+	return "\n".join([_to_unicode(x, errors="replace") for x in lines])
 
 
 def _rescue_changes(git_executable, folder):
@@ -178,7 +178,7 @@ def _rescue_changes(git_executable, folder):
 	returncode, stdout, stderr = _git(["diff", "--shortstat"], folder, git_executable=git_executable)
 	if returncode is None or returncode != 0:
 		raise RuntimeError("Could not update, \"git diff\" failed with returncode {}".format(returncode))
-	if stdout and u"".join(stdout).strip():
+	if stdout and "".join(stdout).strip():
 		# we got changes in the working tree, maybe from the user, so we'll now rescue those into a patch
 		import time
 		import os

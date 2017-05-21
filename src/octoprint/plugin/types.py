@@ -14,7 +14,7 @@ Please note that the plugin implementation types are documented in the section
 
 """
 
-from __future__ import absolute_import, division, print_function
+
 
 __author__ = "Gina Häußge <osd@foosel.net>"
 __license__ = 'GNU Affero General Public License http://www.gnu.org/licenses/agpl.html'
@@ -22,6 +22,7 @@ __copyright__ = "Copyright (C) 2014 The OctoPrint Project - Released under terms
 
 
 from .core import (Plugin, RestartNeedingPlugin, SortablePlugin)
+import collections
 
 
 class OctoPrintPlugin(Plugin):
@@ -1443,7 +1444,7 @@ class SettingsPlugin(OctoPrintPlugin):
 
 			if key in node:
 				if default_value_available:
-					if callable(default_value):
+					if isinstance(default_value, collections.Callable):
 						default_value = default_value()
 					node[key] = default_value
 				else:
@@ -1458,7 +1459,7 @@ class SettingsPlugin(OctoPrintPlugin):
 		                  admin=lambda: current_user is not None and not current_user.is_anonymous() and current_user.is_admin(),
 		                  never=lambda: False)
 
-		for level, condition in conditions.items():
+		for level, condition in list(conditions.items()):
 			paths_for_level = restricted_paths.get(level, [])
 			for path in paths_for_level:
 				restrict_path_unless(data, path, condition)
